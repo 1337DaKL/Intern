@@ -1,0 +1,29 @@
+{
+  "version": 4,
+  "configurations": [
+    {
+      "name": "WinAPI (x86_64‑w64‑mingw32)",
+      // Đường dẫn đến trình biên dịch cross‑compile
+      "compilerPath": "/usr/bin/x86_64-w64-mingw32-g++",
+      // Dùng GCC‑style IntelliSense
+      "intelliSenseMode": "linux-gcc-x64",
+      // Thêm các đường dẫn tới thư mục chứa Windows.h và các header khác
+      "includePath": [
+        "${workspaceFolder}/src",
+        // Thư mục chung của MinGW‑w64
+        "/usr/x86_64-w64-mingw32/include",
+        // Một số máy MinGW‑w64 để Windows Kit ở đây
+        "/usr/x86_64-w64-mingw32/include/winapi",
+        // Thư viện C++ chuẩn (nếu cần code C++)
+        "/usr/include/c++/11",
+        "/usr/include/x86_64-linux-gnu/c++/11"
+      ],
+      // Các define cần thiết cho Unicode / WinAPI
+      "defines": [
+        "UNICODE",
+        "_UNICODE",
+        "_WIN32"
+      ]
+    }
+  ]
+}
