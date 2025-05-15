@@ -150,7 +150,16 @@ void repeat_all_functions()
     }
     else if (result_choose == 3)
     {
-        cout << "chon 3\n";
+        bool deleted_file = DeleteFile("/home/trinhdacluong/Documents/Intern_BKAV/WinAPI_Gui_Project/infor_console.txt");
+        if (deleted_file == false)
+        {
+            print_notion("Xoa file khong thanh cong!!");
+            choose_option();
+        }
+        else
+        {
+            print_notion("Xoa file thanh cong!!");
+        }
     }
     else if (result_choose == 0)
     {
