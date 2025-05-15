@@ -1,37 +1,77 @@
 #include <windows.h>
 #include <string>
 #include <iostream>
+#include <locale>
+#include <codecvt>
 using namespace std;
-void repeat_all_functions(){
-    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-    HANDLE hIn = GetStdHandle(STD_INPUT_HANDLE);
-    if (hOut == INVALID_HANDLE_VALUE || hIn == INVALID_HANDLE_VALUE)
-        return ;
-    const char *msg = "Hay chon chuc nang ban can\n0. Thoat chuong trinh\n1. Doc file in noi dung len man hinh console\n2. Ghi mot chuoi vao file\n3. Xoa file\nNhap chuc nang ban mong muon:\n";
-    DWORD written = 0;
-    WriteConsole(hOut, msg, (DWORD)strlen(msg), &written, nullptr);
+void choose_option();
+void repeat_all_functions();
+void print_notion(const std::string &s)
+{
+    std::string out = s + "\n";
+    HANDLE h_print_notion = GetStdHandle(STD_OUTPUT_HANDLE);
+    DWORD read;
+    WriteConsoleA(h_print_notion, out.c_str(), (DWORD)out.length(), &read, nullptr);
+}
+
+void choose_option()
+{
+    print_notion("-----------------------------------------------------------------------");
+    print_notion("Nhap 0 de dung chuong trinh hoac nhap 1 de quay lai chuong trinh");
+    int option_input;
     while (true)
     {
-        wchar_t choose[100];    
-        DWORD read_console;
-        ReadConsoleW(hIn, choose, 100, &read_console, nullptr);
-        int result_choose = *choose - 48;
-        if (result_choose == 1){
-            HANDLE hFile = CreateFileW(
-                L"/home/trinhdacluong/Documents/Intern_BKAV/infor_console.txt",
-                GENERIC_READ | GENERIC_WRITE,
-                FILE_SHARE_READ,
-                NULL,
-                OPEN_EXISTING,            
-                FILE_ATTRIBUTE_NORMAL,   
-                NULL 
-            );
-            if (hFile == INVALID_HANDLE_VALUE){
-                const char *msg_error_read_file = "Khong the doc duoc file hoac khong tim thay file!!";
-                DWORD written = 0;
-                WriteConsole(hOut, msg_error_read_file, (DWORD)strlen(msg_error_read_file), &written, nullptr);
-                return ;
-            }
+        wchar_t choose_option[100];
+        DWORD read_real;
+        HANDLE h_in_option = GetStdHandle(STD_INPUT_HANDLE);
+        ReadConsoleW(h_in_option, choose_option, 100, &read_real, nullptr);
+        option_input = *choose_option - 48;
+        if (option_input == 1 || option_input == 0)
+            break;
+        print_notion("Vui long chi chon 1 hoac 0. Hay nhap lai");
+    }
+    if (option_input == 1)
+    {
+        repeat_all_functions();
+    }
+    return;
+}
+void repeat_all_functions()
+{
+    // in thong bao
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    print_notion("--------------------------------------------");
+    print_notion("Hay chon chuc nang ban can duoi day:");
+    print_notion("0. Thoat chuong trinh");
+    print_notion("1. Doc file va in noi dung file len man hinh console");
+    print_notion("2. Them noi dung vao file");
+    print_notion("3. Xoa file");
+    print_notion("Hay nhap chuc nang ban mong muon");
+    // nhap lua chon
+    HANDLE hIn = GetStdHandle(STD_INPUT_HANDLE);
+    wchar_t choose[100];
+    DWORD read_console;
+    ReadConsoleW(hIn, choose, 100, &read_console, nullptr);
+    int result_choose = *choose - 48;
+
+    // option lua chon
+    if (result_choose == 1)
+    {
+        HANDLE hFile = CreateFileW(
+            L"/home/trinhdacluong/Documents/Intern_BKAV/WinAPI_Gui_Project/infor_console.txt",
+            GENERIC_READ | GENERIC_WRITE,
+            FILE_SHARE_READ,
+            NULL,
+            OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL,
+            NULL);
+        if (hFile == INVALID_HANDLE_VALUE)
+        {
+            print_notion("Khong the doc duoc file hoac khong tim thay file");
+            choose_option();
+        }
+        else
+        {
             const DWORD buffer_size = 1000;
             char buffer[buffer_size];
             DWORD bytes_read;
@@ -40,51 +80,89 @@ void repeat_all_functions(){
                 buffer,
                 buffer_size - 1,
                 &bytes_read,
-                NULL
-            );
-            if(read_file_boolean == false){
-                const char *msg_error_read_file = "Xay ra loi khi doc file";
-                DWORD written = 0;
-                WriteConsole(hOut, msg_error_read_file, (DWORD)strlen(msg_error_read_file), &written, nullptr);
-                return ;
+                NULL);
+            if (read_file_boolean == false)
+            {
+                print_notion("Xay ra loi khi doc file");
+                choose_option();
             }
-            buffer[bytes_read] = '\0';
-            std::string msg_result_read_file = std::string("Ket qua doc tu file la: \n\"") + buffer + "\"\nNhap 0 de quay lai hoac 1 de ket thuc chuong trinh\n";
-            DWORD written = 0;
-            WriteConsole(hOut, msg_result_read_file.c_str(), (DWORD)msg_result_read_file.length(), &written, nullptr);
-            wchar_t choose_t[100];    
-            DWORD read_console_t;
-            ReadConsoleW(hIn, choose_t, 100, &read_console_t, nullptr);
-            int result_choose_t = *choose_t - 48;
-            if(result_choose_t == 0){
+            else
+            {
+                buffer[bytes_read] = '\0';
+                string msg_result_read_file = string("Ket qua doc tu file la: \n\"") + buffer + "\"\n";
+                print_notion(msg_result_read_file);
                 CloseHandle(hFile);
-                repeat_all_functions();
+                choose_option();
             }
-            else if(result_choose_t == 1){
-                return ;
-            }
-            else{
-                const char *msg_error_read_file = "Vui long chon dung lua chon co trong cac lua chon tren";
-                DWORD written = 0;
-                WriteConsole(hOut, msg_error_read_file, (DWORD)strlen(msg_error_read_file), &written, nullptr);
-            }
-        }
-        else if (result_choose == 2){
-            cout << "chon 2\n";
-        }
-        else if (result_choose == 3){
-            cout << "chon 3\n";
-        }
-        else if (result_choose == 0)
-        {
-            cout << "Thoat chuong trinh thanh cong\n";
-            break;
-        }
-        else{
-            cout << "Vui long chon dung so chuc nang ban can chon\n";
         }
     }
-    return ;
+    else if (result_choose == 2)
+    {
+        HANDLE h_file_open_input = CreateFileW(
+            L"/home/trinhdacluong/Documents/Intern_BKAV/WinAPI_Gui_Project/infor_console.txt",
+            FILE_APPEND_DATA,
+            FILE_SHARE_WRITE,
+            NULL,
+            OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL,
+            NULL);
+        if (h_file_open_input == INVALID_HANDLE_VALUE)
+        {
+            print_notion("Duong dan file loi");
+            choose_option();
+        }
+        // tohong t=bao
+        print_notion("Vui long nhap noi dung muon them vao file");
+        // nhap noi dung
+        HANDLE h_in = GetStdHandle(STD_INPUT_HANDLE);
+        wchar_t input_in_file[100];
+        DWORD read;
+        ReadConsoleW(h_in, input_in_file, 100, &read, nullptr);
+        if (read >= 2 && input_in_file[read - 2] == L'\r')
+        {
+            input_in_file[read - 2] = L'\0';
+        }
+        else
+        {
+            input_in_file[read] = L'\0';
+        }
+        wstring_convert<codecvt_utf8<wchar_t>> converter;
+        string utf8Str = converter.to_bytes(input_in_file);
+        string in_file = utf8Str + "\r\n";
+        DWORD bytes_written = 0;
+        BOOL push_in_file = WriteFile(
+            h_file_open_input,
+            in_file.c_str(),
+            (DWORD)in_file.length(),
+            &bytes_written,
+            NULL);
+        if (push_in_file == false)
+        {
+            print_notion("Them noi dung vao file khong thanh cong");
+            choose_option();
+        }
+        else
+        {
+            print_notion("Them noi dung vua nhap vao file thanh cong");
+            CloseHandle(h_file_open_input);
+            choose_option();
+        }
+    }
+    else if (result_choose == 3)
+    {
+        cout << "chon 3\n";
+    }
+    else if (result_choose == 0)
+    {
+        print_notion("Thoat chuong trinh thanh cong!!");
+        return;
+    }
+    else
+    {
+        print_notion("Vui long chon nhung chuc nang co trong goi y");
+        choose_option();
+    }
+    return;
 }
 int main()
 {
