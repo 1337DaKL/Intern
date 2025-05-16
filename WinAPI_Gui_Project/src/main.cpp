@@ -1,12 +1,30 @@
 #include <windows.h>
 #include <string>
-#include <iostream>
 #include <locale>
 #include <codecvt>
+#include <iostream>
 using namespace std;
 void choose_option();
 void repeat_all_functions();
-void print_notion(const std::string &s)
+void print_notion(const string &s);
+wstring get_name_file()
+{
+    print_notion("Nhap ten file muon xu li:");
+    wchar_t name_file[100];
+    DWORD real_name_read;
+    HANDLE h_get_name = GetStdHandle(STD_INPUT_HANDLE);
+    ReadConsoleW(h_get_name, name_file, 100, &real_name_read, nullptr);
+    if (real_name_read >= 2 && name_file[real_name_read - 2] == L'\r')
+    {
+        name_file[real_name_read - 2] = L'\0';
+    }
+    else
+    {
+        name_file[real_name_read] = L'\0';
+    }
+    return L"/home/trinhdacluong/Documents/Intern_BKAV/WinAPI_Gui_Project/" + wstring(name_file);
+}
+void print_notion(const string &s)
 {
     std::string out = s + "\n";
     HANDLE h_print_notion = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -46,7 +64,7 @@ void repeat_all_functions()
     print_notion("1. Doc file va in noi dung file len man hinh console");
     print_notion("2. Them noi dung vao file");
     print_notion("3. Xoa file");
-    print_notion("Hay nhap chuc nang ban mong muon");
+    print_notion("Hay nhap chuc nang ban mong muon:");
     // nhap lua chon
     HANDLE hIn = GetStdHandle(STD_INPUT_HANDLE);
     wchar_t choose[100];
@@ -57,8 +75,9 @@ void repeat_all_functions()
     // option lua chon
     if (result_choose == 1)
     {
+        wstring name_file = get_name_file();
         HANDLE hFile = CreateFileW(
-            L"/home/trinhdacluong/Documents/Intern_BKAV/WinAPI_Gui_Project/infor_console.txt",
+            name_file.c_str(),
             GENERIC_READ | GENERIC_WRITE,
             FILE_SHARE_READ,
             NULL,
@@ -98,8 +117,9 @@ void repeat_all_functions()
     }
     else if (result_choose == 2)
     {
+        wstring name_file = get_name_file();
         HANDLE h_file_open_input = CreateFileW(
-            L"/home/trinhdacluong/Documents/Intern_BKAV/WinAPI_Gui_Project/infor_console.txt",
+            name_file.c_str(),
             FILE_APPEND_DATA,
             FILE_SHARE_WRITE,
             NULL,
@@ -150,10 +170,11 @@ void repeat_all_functions()
     }
     else if (result_choose == 3)
     {
-        bool deleted_file = DeleteFile("/home/trinhdacluong/Documents/Intern_BKAV/WinAPI_Gui_Project/infor_console.txt");
+        wstring name_file = get_name_file();
+        bool deleted_file = DeleteFileW(name_file.c_str());
         if (deleted_file == false)
         {
-            print_notion("Xoa file khong thanh cong!!");
+            print_notion("Xoa file khong thanh cong do file khong ton tai!!");
             choose_option();
         }
         else
