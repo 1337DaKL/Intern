@@ -38,21 +38,12 @@ HKEY select_key_root(string s) {
 	print_notion("5. HKEY_CURRENT_CONFIG");
 	print_notion("Chon Key Root:");
 	int option = select_option();
-	if (option == 1) {
-		return HKEY_CLASSES_ROOT;
-	}
-	if (option == 2) {
-		return HKEY_CURRENT_USER;
-	}
-	if (option == 3) {
-		return HKEY_LOCAL_MACHINE;
-	}
-	if (option == 4) {
-		return HKEY_USERS;
-	}
-	if (option == 5) {
-		return HKEY_CURRENT_CONFIG;
-	}
+	//return (option == 1) ? HKEY_CLASSES_ROOT : (option == 2) ? HKEY_CURRENT_USER : (option == 3) ? HKEY_CURRENT_USER : (option == 4) ? HKEY_USERS : (option == 5) ? HKEY_CURRENT_CONFIG :  ;
+	if (option == 1) return HKEY_CLASSES_ROOT;
+	if (option == 2) return HKEY_CURRENT_USER;
+	if (option == 3) return HKEY_CURRENT_USER;
+	if (option == 4) return HKEY_USERS;
+	if (option == 5) return HKEY_CURRENT_CONFIG;
 	print_notion("Vui long chon mot trong nhung root tren!! Chon 1 de thuc hien lai hoac chon 0 de thoat khoi chuong trinh.");
 	int option_second = select_option();
 	if (option_second == 1) {
@@ -119,7 +110,27 @@ void for_loop() {
 		}
 		HKEY h_key = create_key(option_key, name_key);
 		RegCloseKey(option_key);
-		Sleep(10000);
+		int i = 0;
+		while (true) {
+			if (i == 9) {
+				break;
+			}
+			string ok = "Dem nguoc: " + to_string(9 - i);
+			HANDLE out = GetStdHandle(STD_OUTPUT_HANDLE);
+			COORD pos;
+			pos.X = 0;
+			pos.Y = 21;
+			SetConsoleCursorPosition(out, pos);
+			WriteConsoleA(
+				out,
+				ok.c_str(),
+				(DWORD)size(ok),
+				&real,
+				NULL
+			);
+			i++;
+			Sleep(1000);
+		}
 		for_loop();
 	}
 	if (option == 2) {
@@ -129,6 +140,64 @@ void for_loop() {
 			return;
 		}
 		//main
+		string value_key;
+		DWORD size_value = sizeof(value_key);
+		print_notion("Nhap key muon doc neu khong nhap thi se doc tu key root");
+		char key[100];
+		DWORD real_key;
+		ReadConsoleA(
+			h_in,
+			key,
+			100,
+			&real_key,
+			NULL
+		);
+		print_notion("Nhap ten value can doc gia tri, neu khong nhap gi thi se doc gia tri default cua key ");
+		char value_name[100];
+		DWORD real_name_value;
+		ReadConsoleA(
+			h_in, 
+			value_name,
+			100,
+			&real_name_value,
+			NULL
+		);
+		if (real_key >= 2 && key[real_key - 2] == '\r' && key[real_key - 1] == '\n')
+			key[real_key - 2] = '\0';
+		else
+			key[real_key] = '\0';
+
+		if (real_name_value >= 2 && value_name[real_name_value - 2] == '\r' && value_name[real_name_value - 1] == '\n')
+			value_name[real_name_value - 2] = '\0';
+		else
+			value_name[real_name_value] = '\0';
+		const char* key_read = real_key == 0 ? NULL : key;
+		const char* name_value_read = real_name_value == 0 ? NULL : value_name;
+		DWORD data_size = sizeof(DWORD);
+		DWORD data;
+		DWORD type;
+		LONG results = RegGetValueA(
+			option_key,
+			key_read,
+			name_value_read,
+			RRF_RT_ANY,
+			&type,
+			&data,
+			&data_size
+		);
+		if (results == ERROR_SUCCESS) {
+			print_notion("Ket qua value la: " + to_string(data));
+			Sleep(10000);
+			for_loop();
+		}
+		print_notion("Khong tim duoc value can doc!! Chon 1 de quay lai hoac chon 0 de thoat khoi chuong trinh.");
+		int choose_option = select_option();
+		if (choose_option == 1) {
+			for_loop();
+		}
+		else {
+			return;
+		}
 	}
 	if (option == 3) {
 		HKEY option_key = select_key_root("Sua value key");
@@ -137,6 +206,84 @@ void for_loop() {
 			return;
 		}
 		//main
+		print_notion("Nhap key ban muon sua value neu khong nhap se sua value trong keyroot:");
+		char key_change[100];
+		ReadConsoleA(
+			h_in,
+			key_change,
+			100,
+			&real,
+			NULL
+		);
+		
+		if (real >= 2 && key_change[real - 2] == '\r' && key_change[real - 1] == '\n') key_change[real - 2] = '\0';
+		else key_change[real] = '\0';
+		const char* key = (real == 0) ? NULL : key_change;
+		HKEY hkey;
+		LONG results = RegOpenKeyExA(
+			option_key,
+			key,
+			0,
+			KEY_WRITE,
+			&hkey
+		);
+		if (results == ERROR_SUCCESS) {
+			print_notion("Nhap value name ban muon sua:");
+			char name_value[100];
+			ReadConsoleA(
+				h_in,
+				name_value,
+				100,
+				&real,
+				NULL
+			);
+			if (real >= 2 && name_value[real - 2] == '\r' && name_value[real - 1] == '\n') name_value[real - 2] = '\0';
+			else name_value[real] = '\0';
+			print_notion("Nhap gia tri value ban muon sua:");
+			char data[100];
+			ReadConsoleA(
+				h_in ,
+				data,
+				100,
+				&real,
+				NULL
+			);
+			if (real >= 2 && data[real - 2] == '\r' && data[real - 1] == '\n') data[real - 2] = '\0';
+			else data[real] = '\0';
+			LONG results_in = RegSetValueExA(
+				hkey,
+				name_value,
+				0,
+				REG_SZ,
+				(LPBYTE)data,
+				(DWORD)size(data)
+			);
+			if (results_in == ERROR_SUCCESS) {
+				print_notion("Sua value thanh cong");
+				Sleep(10000);
+				for_loop();
+			}
+			else {
+				print_notion("Sua value that bai!! Nhap 1 de quay lai chuong trinh hoac nhap 0 de ket thuc chuong trinh");
+				int choose_option = select_option();
+				if (choose_option == 1) {
+					for_loop();
+				}
+				else {
+					return;
+				}
+			}
+		}
+		else {
+			print_notion("Khong tim thay key ban can tim!! Nhap 1 de quay lai chuong trinh nhap 0 de thoat khoi chuong trinh");
+			int choose_option = select_option();
+			if (choose_option == 1) {
+				for_loop();
+			}
+			else {
+				return;
+			}
+		}
 	}
 	
 	if (option == 4) {
@@ -146,6 +293,47 @@ void for_loop() {
 			return;
 		}
 		//main
+		print_notion("Nhap key ban muon xoa:");
+		char key_deleted[100];
+		ReadConsoleA(
+			h_in,
+			key_deleted,
+			100,
+			&real,
+			NULL
+		);
+		if (real == 0) {
+			print_notion("Key khong duoc rong!! Nhap 1 de quay lai chuong trinh nhap 0 de thoat khoi chuong trinh");
+			int option = select_option();
+			if (option == 1) {
+				for_loop();
+			}
+			return;
+		}
+		if (real >= 2 && key_deleted[real - 2] == '\r' && key_deleted[real - 1] == '\n') {
+			key_deleted[real - 2] = '\0';
+		}
+		else {
+			key_deleted[real] = '\0';
+		}
+		const char* key_del = string(key_deleted).c_str();
+		LONG results = RegDeleteKeyA(
+			option_key,
+			key_deleted
+		);
+		if (results == ERROR_SUCCESS) {
+			print_notion("Xoa key thanh cong");
+			Sleep(10000);
+			for_loop();
+		}
+		else {
+			print_notion("Xoa key that bai!! Nhap 1 de quay lai chuong trinh nhap 0 de thoat khoi chuong trinh");
+			int option = select_option();
+			if (option == 1) {
+				for_loop();
+			}
+			return;
+		}
 	}
 	if (option == 5) {
 		print_notion("Thoat chuong trinh thanh cong");
