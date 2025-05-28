@@ -8,7 +8,7 @@ using namespace std;
 HANDLE h_in = GetStdHandle(STD_INPUT_HANDLE);
 HANDLE h_out = GetStdHandle(STD_OUTPUT_HANDLE);
 DWORD real;
-void print_notion(string s) {
+void print_notion(string s)	 {
 	s += "\n";
 	WriteConsoleA(
 		h_out,
@@ -30,6 +30,7 @@ int select_option() {
 	return atoi(option);
 }
 HKEY select_key_root(string s) {
+	system("cls");
 	print_notion("Chon mot trong nhung key root sau de thuc hien " + s);
 	print_notion("1. HKEY_CLASSES_ROOT");
 	print_notion("2. HKEY_CURRENT_USER");
@@ -41,7 +42,7 @@ HKEY select_key_root(string s) {
 	//return (option == 1) ? HKEY_CLASSES_ROOT : (option == 2) ? HKEY_CURRENT_USER : (option == 3) ? HKEY_CURRENT_USER : (option == 4) ? HKEY_USERS : (option == 5) ? HKEY_CURRENT_CONFIG :  ;
 	if (option == 1) return HKEY_CLASSES_ROOT;
 	if (option == 2) return HKEY_CURRENT_USER;
-	if (option == 3) return HKEY_CURRENT_USER;
+	if (option == 3) return HKEY_LOCAL_MACHINE;
 	if (option == 4) return HKEY_USERS;
 	if (option == 5) return HKEY_CURRENT_CONFIG;
 	print_notion("Vui long chon mot trong nhung root tren!! Chon 1 de thuc hien lai hoac chon 0 de thoat khoi chuong trinh.");
@@ -60,7 +61,7 @@ HKEY create_key(HKEY h_key, const char* name_key) {
 		h_key,
 		name_key,
 		0,
-		NULL,
+		NULL,         
 		REG_OPTION_NON_VOLATILE,
 		KEY_ALL_ACCESS,
 		NULL,
@@ -110,7 +111,7 @@ void for_loop() {
 		}
 		HKEY h_key = create_key(option_key, name_key);
 		RegCloseKey(option_key);
-		int i = 0;
+		/*int i = 0;
 		while (true) {
 			if (i == 9) {
 				break;
@@ -119,7 +120,7 @@ void for_loop() {
 			HANDLE out = GetStdHandle(STD_OUTPUT_HANDLE);
 			COORD pos;
 			pos.X = 0;
-			pos.Y = 21;
+			pos.Y = 11;
 			SetConsoleCursorPosition(out, pos);
 			WriteConsoleA(
 				out,
@@ -131,7 +132,15 @@ void for_loop() {
 			i++;
 			Sleep(1000);
 		}
-		for_loop();
+		for_loop();*/
+		print_notion("Chon 1 de quay lai hoac chon 0 de thoat khoi chuong trinh.");
+		int choose_option = select_option();
+		if (choose_option == 1) {
+			for_loop();
+		}
+		else {
+			return;
+		}
 	}
 	if (option == 2) {
 		HKEY option_key = select_key_root("doc value key");
@@ -187,8 +196,14 @@ void for_loop() {
 		);
 		if (results == ERROR_SUCCESS) {
 			print_notion("Ket qua value la: " + to_string(data));
-			Sleep(10000);
-			for_loop();
+			print_notion("Chon 1 de quay lai hoac chon 0 de thoat khoi chuong trinh.");
+			int choose_option = select_option();
+			if (choose_option == 1) {
+				for_loop();
+			}
+			else {
+				return;
+			}
 		}
 		print_notion("Khong tim duoc value can doc!! Chon 1 de quay lai hoac chon 0 de thoat khoi chuong trinh.");
 		int choose_option = select_option();
@@ -260,8 +275,14 @@ void for_loop() {
 			);
 			if (results_in == ERROR_SUCCESS) {
 				print_notion("Sua value thanh cong");
-				Sleep(10000);
-				for_loop();
+				print_notion("Chon 1 de quay lai hoac chon 0 de thoat khoi chuong trinh.");
+				int choose_option = select_option();
+				if (choose_option == 1) {
+					for_loop();
+				}
+				else {
+					return;
+				}
 			}
 			else {
 				print_notion("Sua value that bai!! Nhap 1 de quay lai chuong trinh hoac nhap 0 de ket thuc chuong trinh");
@@ -323,8 +344,14 @@ void for_loop() {
 		);
 		if (results == ERROR_SUCCESS) {
 			print_notion("Xoa key thanh cong");
-			Sleep(10000);
-			for_loop();
+			print_notion("Chon 1 de quay lai hoac chon 0 de thoat khoi chuong trinh.");
+			int choose_option = select_option();
+			if (choose_option == 1) {
+				for_loop();
+			}
+			else {
+				return;
+			}
 		}
 		else {
 			print_notion("Xoa key that bai!! Nhap 1 de quay lai chuong trinh nhap 0 de thoat khoi chuong trinh");
