@@ -4,10 +4,12 @@
 #include <string>
 #include <winreg.h>
 #include<iostream>
+#include<libloaderapi.h>
 using namespace std;
 HANDLE h_in = GetStdHandle(STD_INPUT_HANDLE);
 HANDLE h_out = GetStdHandle(STD_OUTPUT_HANDLE);
 DWORD real;
+
 void print_notion(string s)	 {
 	s += "\n";
 	WriteConsoleA(
@@ -18,6 +20,7 @@ void print_notion(string s)	 {
 		NULL
 	);
 }
+
 int select_option() {
 	char option[100];
 	ReadConsoleA(
@@ -29,6 +32,7 @@ int select_option() {
 	);
 	return atoi(option);
 }
+
 HKEY select_key_root(string s) {
 	system("cls");
 	print_notion("Chon mot trong nhung key root sau de thuc hien " + s);
@@ -39,7 +43,6 @@ HKEY select_key_root(string s) {
 	print_notion("5. HKEY_CURRENT_CONFIG");
 	print_notion("Chon Key Root:");
 	int option = select_option();
-	//return (option == 1) ? HKEY_CLASSES_ROOT : (option == 2) ? HKEY_CURRENT_USER : (option == 3) ? HKEY_CURRENT_USER : (option == 4) ? HKEY_USERS : (option == 5) ? HKEY_CURRENT_CONFIG :  ;
 	if (option == 1) return HKEY_CLASSES_ROOT;
 	if (option == 2) return HKEY_CURRENT_USER;
 	if (option == 3) return HKEY_LOCAL_MACHINE;
@@ -54,6 +57,7 @@ HKEY select_key_root(string s) {
 		return NULL;
 	}
 }
+
 HKEY create_key(HKEY h_key, const char* name_key) {
 	HKEY result_key;
 	DWORD exits;
@@ -86,6 +90,7 @@ void for_loop() {
 	system("cls");
 	print_notion("------------------------");
 	print_notion("===MENU===");
+	print_notion("0. Tu dong khoi dong lai");
 	print_notion("1. Them key");
 	print_notion("2. Doc value key");
 	print_notion("3. Sua value key");
@@ -93,7 +98,96 @@ void for_loop() {
 	print_notion("5. Thoat chuong trinh");
 	print_notion("Nhap lua chon ban mong muon:");
 	int option = select_option();
-	if (option == 1) {
+	if (option == 0) {
+		char* name_file_exe = new char[100];
+		DWORD restart_program = GetModuleFileNameA(
+			NULL,
+			name_file_exe,
+			100
+		);
+		HKEY key_restart;
+		string path = "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run";
+		LONG results =  RegOpenKeyExA(
+			HKEY_CURRENT_USER,
+			path.c_str(),
+			NULL,
+			KEY_ALL_ACCESS,
+			&key_restart
+		);
+		string name_value = "restart_exe";
+		if (results == ERROR_SUCCESS) {
+			system("cls");
+			print_notion("Nhap 1 de bat, nhap 0 de tat!!");
+			int on_off = select_option();
+			if (on_off == 1) {
+				
+				LONG on_restart = RegSetValueExA(
+					key_restart,
+					name_value.c_str(),
+					0,
+					REG_SZ,
+					(LPBYTE)name_file_exe,
+					(DWORD)strlen(name_file_exe)
+				);
+				if (on_restart == ERROR_SUCCESS) {
+					print_notion("Bat thanh cong.  Nhap 0 de thoat chuong trinh. Nhap 1 de quay lai chuong trinh ");
+					int choose_option = select_option();
+					if (choose_option == 1) {
+						for_loop();
+					}
+					else {
+						print_notion("Thoat chuong trinh thanh cong");
+						return;
+					}
+				}
+				else {
+					print_notion("Bat khong thanh cong. Nhap 0 de thoat chuong trinh. Nhap 1 de quay lai chuong trinh");
+					int choose_option = select_option();
+					if (choose_option == 1) {
+						for_loop();
+					}
+					else {
+						print_notion("Thoat chuong trinh thanh cong");
+						return;
+					}
+				}
+			}
+			else {
+				LONG off_restart = RegDeleteValueA(
+					key_restart,
+					name_value.c_str()
+				);
+				if (off_restart == ERROR_SUCCESS) {
+					print_notion("Tat thanh cong. Nhap 0 de thoat chuong trinh. Nhap 1 de quay lai chuong trinh");
+					int choose_option = select_option();
+					if (choose_option == 1) {
+						for_loop();
+					}
+					else {
+						print_notion("Thoat chuong trinh thanh cong");
+						return;
+					}
+				}
+				else {
+					print_notion("Tat khong thanh cong. Nhap 0 de thoat chuong trinh. Nhap 1 de quay lai chuong trinh");
+					int choose_option = select_option();
+					if (choose_option == 1) {
+						for_loop();
+					}
+					else {
+						print_notion("Thoat chuong trinh thanh cong");
+						return;
+					}
+				}
+			}
+		}
+		else {
+			print_notion("Mo key khong thanh cong");
+			return;
+		}
+		delete[] name_file_exe;
+	}
+	else if (option == 1) {
 		HKEY option_key = select_key_root("them key");
 		if (option_key == NULL) {
 			print_notion("Thoat chuong trinh thanh cong");
@@ -162,19 +256,60 @@ void for_loop() {
 		const char* key_read = real_key == 0 ? NULL : key;
 		const char* name_value_read = real_name_value == 0 ? NULL : value_name;
 		DWORD data_size = sizeof(DWORD);
-		DWORD data;
 		DWORD type;
-		LONG results = RegGetValueA(
+		LONG results_test_type = RegGetValueA(
 			option_key,
 			key_read,
 			name_value_read,
 			RRF_RT_ANY,
 			&type,
-			&data,
+			NULL,
 			&data_size
 		);
-		if (results == ERROR_SUCCESS) {
-			print_notion("Ket qua value la: " + to_string(data));
+		if (results_test_type == ERROR_SUCCESS) {
+			if (type == REG_SZ) {
+				char* data = new char[data_size];
+				LONG results = RegGetValueA(
+					option_key,
+					key_read,
+					name_value_read,
+					RRF_RT_REG_SZ,
+					&type,
+					data,
+					&data_size
+				);
+				print_notion("Gia tri value la : " + string(data));
+			}
+			else if (type == REG_DWORD) {
+				DWORD data;
+				LONG results = RegGetValueA(
+					option_key,
+					key_read,
+					name_value_read,
+					RRF_RT_REG_DWORD,
+					&type,
+					&data,
+					&data_size
+				);
+				print_notion("Gia tri value la : " + to_string(data));
+			}
+			else if (type == REG_BINARY) {
+				BYTE data[1000];
+				LONG results = RegGetValueA(
+					option_key,
+					key_read,
+					name_value_read,
+					RRF_RT_REG_BINARY,
+					&type,
+					&data,
+					&data_size
+				);
+				cout << "Ket qua value la: ";
+				for (DWORD i = 0; i < data_size; ++i) {
+					printf("%02X ", data[i]);
+				}
+				cout << endl;
+			}
 			print_notion("Chon 1 de quay lai hoac chon 0 de thoat khoi chuong trinh.");
 			int choose_option = select_option();
 			if (choose_option == 1) {
@@ -185,14 +320,16 @@ void for_loop() {
 				return;
 			}
 		}
-		print_notion("Khong tim duoc value can doc!! Chon 1 de quay lai hoac chon 0 de thoat khoi chuong trinh.");
-		int choose_option = select_option();
-		if (choose_option == 1) {
-			for_loop();
-		}
 		else {
-			print_notion("Thoat chuong trinh thanh cong");
-			return;
+			print_notion("Khong tim duoc value can doc!! Chon 1 de quay lai hoac chon 0 de thoat khoi chuong trinh.");
+			int choose_option = select_option();
+			if (choose_option == 1) {
+				for_loop();
+			}
+			else {
+				print_notion("Thoat chuong trinh thanh cong");
+				return;
+			}
 		}
 	}
 	else if (option == 3) {
@@ -289,8 +426,7 @@ void for_loop() {
 				return;
 			}
 		}
-	}
-	
+	}	
 	else if (option == 4) {
 		HKEY option_key = select_key_root("xoa key");
 		if (option_key == NULL) {
@@ -321,7 +457,6 @@ void for_loop() {
 		else {
 			key_deleted[real] = '\0';
 		}
-		const char* key_del = string(key_deleted).c_str();
 		LONG results = RegDeleteKeyA(
 			option_key,
 			key_deleted
