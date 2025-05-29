@@ -111,38 +111,17 @@ void for_loop() {
 		}
 		HKEY h_key = create_key(option_key, name_key);
 		RegCloseKey(option_key);
-		/*int i = 0;
-		while (true) {
-			if (i == 9) {
-				break;
-			}
-			string ok = "Dem nguoc: " + to_string(9 - i);
-			HANDLE out = GetStdHandle(STD_OUTPUT_HANDLE);
-			COORD pos;
-			pos.X = 0;
-			pos.Y = 11;
-			SetConsoleCursorPosition(out, pos);
-			WriteConsoleA(
-				out,
-				ok.c_str(),
-				(DWORD)size(ok),
-				&real,
-				NULL
-			);
-			i++;
-			Sleep(1000);
-		}
-		for_loop();*/
 		print_notion("Chon 1 de quay lai hoac chon 0 de thoat khoi chuong trinh.");
 		int choose_option = select_option();
 		if (choose_option == 1) {
 			for_loop();
 		}
 		else {
+			print_notion("Thoat chuong trinh thanh cong");
 			return;
 		}
 	}
-	if (option == 2) {
+	else if (option == 2) {
 		HKEY option_key = select_key_root("doc value key");
 		if (option_key == NULL) {
 			print_notion("Thoat chuong trinh thanh cong");
@@ -202,6 +181,7 @@ void for_loop() {
 				for_loop();
 			}
 			else {
+				print_notion("Thoat chuong trinh thanh cong");
 				return;
 			}
 		}
@@ -211,10 +191,11 @@ void for_loop() {
 			for_loop();
 		}
 		else {
+			print_notion("Thoat chuong trinh thanh cong");
 			return;
 		}
 	}
-	if (option == 3) {
+	else if (option == 3) {
 		HKEY option_key = select_key_root("Sua value key");
 		if (option_key == NULL) {
 			print_notion("Thoat chuong trinh thanh cong");
@@ -281,6 +262,7 @@ void for_loop() {
 					for_loop();
 				}
 				else {
+					print_notion("Thoat chuong trinh thanh cong");
 					return;
 				}
 			}
@@ -291,6 +273,7 @@ void for_loop() {
 					for_loop();
 				}
 				else {
+					print_notion("Thoat chuong trinh thanh cong");
 					return;
 				}
 			}
@@ -302,12 +285,13 @@ void for_loop() {
 				for_loop();
 			}
 			else {
+				print_notion("Thoat chuong trinh thanh cong");
 				return;
 			}
 		}
 	}
 	
-	if (option == 4) {
+	else if (option == 4) {
 		HKEY option_key = select_key_root("xoa key");
 		if (option_key == NULL) {
 			print_notion("Thoat chuong trinh thanh cong");
@@ -350,6 +334,7 @@ void for_loop() {
 				for_loop();
 			}
 			else {
+				print_notion("Thoat chuong trinh thanh cong");
 				return;
 			}
 		}
@@ -362,18 +347,20 @@ void for_loop() {
 			return;
 		}
 	}
-	if (option == 5) {
+	else if (option == 5) {
 		print_notion("Thoat chuong trinh thanh cong");
 		return;
-	}
-	print_notion("Vui long chon 1 trong cac lua chon tren! Nhap 1 de thuc hien lai hoac nhap 0 de thoat chuong trinh.");
-	int option_second = select_option();
-	if (option_second == 1) {
-		for_loop();
 	}
 	else {
-		print_notion("Thoat chuong trinh thanh cong");
-		return;
+		print_notion("Vui long chon 1 trong cac lua chon tren! Nhap 1 de thuc hien lai hoac nhap 0 de thoat chuong trinh.");
+		int option_second = select_option();
+		if (option_second == 1) {
+			for_loop();
+		}
+		else {
+			print_notion("Thoat chuong trinh thanh cong");
+			return;
+		}
 	}
 }
 
