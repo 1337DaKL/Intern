@@ -1,46 +1,96 @@
-﻿#define _WINSOCK_DEPRECATED_NO_WARNINGS
-#include <winsock2.h>  
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
+#include <winsock2.h>
 #include <windows.h>
 #include <ws2tcpip.h>
 #include <iostream>
+#include <string>
+#include <thread>
 #pragma comment(lib, "ws2_32.lib")
 using namespace std;
-void print_notion(wstring s) {
-    s += L"\n";
-    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-    DWORD real_writen;
-    WriteConsoleW(hOut, s.c_str(), size(s), &real_writen, NULL);
+
+string readMessenge() {
+    HANDLE hIn = GetStdHandle(STD_INPUT_HANDLE);
+    char results[100] = { 0 };
+    DWORD readRead;
+    ReadConsoleA(hIn, results, 100, &readRead, NULL);
+    if (readRead >= 2 && results[readRead - 2] == '\r' && results[readRead - 1] == '\n') {
+        results[readRead - 2] = '\0';
+    }
+    else {
+        results[readRead] = '\0';
+    }
+    return string(results);
 }
+
+void print_notion(string s) {
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+
+    // Lấy vị trí dòng hiện tại
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    GetConsoleScreenBufferInfo(hOut, &csbi);
+
+    COORD coord;
+    coord.X = 50; // Cột 50
+    coord.Y = csbi.dwCursorPosition.Y; // Dòng hiện tại
+
+    SetConsoleCursorPosition(hOut, coord);
+
+    s += "\n";
+    DWORD real_written;
+    WriteConsoleA(hOut, s.c_str(), (DWORD)s.size(), &real_written, NULL);
+}
+
+
+void receiveMessages(SOCKET clientSocket) {
+    while (true) {
+        char results[100] = { 0 };
+        int recvLen = recv(clientSocket, results, sizeof(results) - 1, 0);
+        if (recvLen <= 0) {
+            print_notion("Server da dong hoac co loi");
+            break;
+        }
+        print_notion("Server: " + string(results));
+    }
+}
+
+void sendMessages(SOCKET clientSocket) {
+    while (true) {
+        string messenger = readMessenge();
+        send(clientSocket, messenger.c_str(), (int)messenger.length(), 0);
+    }
+}
+
 int main() {
-    Sleep(1000);
     WSAData wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-        print_notion(L"Khởi tạo Winsock DLL không thành công");
+        print_notion("Khoi tao Winsock DLL khong thanh cong.");
         return 0;
     }
-    print_notion(L"Khởi tạo Winsock DLL thành công ...");
-    Sleep(1000);
+
     SOCKET clientSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (clientSocket == INVALID_SOCKET) {
-        print_notion(L"Khởi tạo socket client không thành công!!");
+        print_notion("Khoi tao Socket khong thanh cong!!");
         return 0;
     }
-    print_notion(L"Khởi tạo socket client thành công ...");
-    Sleep(1000);
-    sockaddr_in server{};
+
+    sockaddr_in server = {};
     server.sin_family = AF_INET;
     server.sin_port = htons(12345);
     InetPton(AF_INET, L"127.0.0.1", &server.sin_addr);
-    int resultsConnect = connect(clientSocket, (sockaddr*)&server, sizeof(server));
-    if (resultsConnect != 0) {
-        print_notion(L"Kết nối không thành công với server!!");
+
+    if (connect(clientSocket, (sockaddr*)&server, sizeof(server)) != 0) {
+        print_notion("Ket noi toi server khong thanh cong!!");
         return 0;
     }
-    print_notion(L"Kết nối thành công với server...");
-    print_notion(L"Nhập thông tin muốn gửi cho server:");
-    HANDLE hIN = GetStdHandle(STD_INPUT_HANDLE);
-    char mess[100];
-    DWORD readRead;
-    ReadConsoleW(hIN, mess, 100, &readRead, NULL);
-    send(clientSocket, mess, sizeof(mess), MSG_OOB);
+
+
+    thread recvThread(receiveMessages, clientSocket);
+    thread sendThread(sendMessages, clientSocket);
+
+    recvThread.join();
+    sendThread.join();
+
+    closesocket(clientSocket);
+    WSACleanup();
+    return 0;
 }
