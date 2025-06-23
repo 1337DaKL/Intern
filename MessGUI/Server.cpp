@@ -1,4 +1,4 @@
-﻿#include <iostream>
+#include <iostream>
 #include<winsock.h>
 #include<vector>
 #include<string>
@@ -39,14 +39,6 @@ int main() {
 	cout << "Server dang cho ket noi toi client ..." << endl;
 	listen(serverSocket, SOMAXCONN);
 	while (true) {
-		//gui danh sach nguoi dung dang online
-		for (auto itt : usersLogin) {
-			string listUserlogin = "";
-			for (auto it : usersLogin) {
-				listUserlogin += it.clientName + "-";
-			}
-			send(itt.clientSocket, listUserlogin.c_str(), size(listUserlogin), 0);
-		}
 		fd_set socketsConnect;
 		FD_ZERO(&socketsConnect);
 		FD_SET(serverSocket, &socketsConnect);
@@ -75,9 +67,15 @@ int main() {
 					closesocket(clientSocketTmp);
 					usersLogin.erase(usersLogin.begin() + i);
 					--i;
+					for (auto itt : usersLogin) {
+						string listUserlogin = "-";
+						for (auto it : usersLogin) {
+							listUserlogin += it.clientName + "-";
+						}
+						send(itt.clientSocket, listUserlogin.c_str(), size(listUserlogin), 0);
+					}
 				}
 				else {
-					
 					string messSendServer = string(mess);
 					char checkStatus = messSendServer[0];
 					if (checkStatus == '/') {
@@ -85,24 +83,58 @@ int main() {
 						bool checkExits = false;
 						for (auto it : usersLogin) {
 							if (it.clientName == name) {
-								string error = "Ten nguoi dung da ton tai vui long chon ten khac";
+								string error = "/e";
 								send(usersLogin[i].clientSocket, error.c_str(), size(error), 0);
 								checkExits = true;
-								
+								break;
 							}
 						}
-						if (checkExits) {
-							continue;
+						if (checkExits == false) {
+							usersLogin[i].clientName = name;
+							cout << "Username: " << usersLogin[i].clientName << " vua dang nhap vao he thong" << endl;
+							string notionLogin = "/l";
+							send(usersLogin[i].clientSocket, notionLogin.c_str(), sizeof(notionLogin), 0);
+							for (auto itt : usersLogin) {
+								string listUserlogin = "-";
+								for (auto it : usersLogin) {
+									listUserlogin += it.clientName + "-";
+								}
+								send(itt.clientSocket, listUserlogin.c_str(), size(listUserlogin), 0);
+							}
 						}
-						usersLogin[i].clientName = name;
-						cout << "Username: " << usersLogin[i].clientName << " vua dang nhap vao he thong" << endl;
-						
 					}
-					else if (checkStatus == '?') {
-						cout << "Username: " << usersLogin[i].clientName << " vua logout" << endl;
-						closesocket(usersLogin[i].clientSocket);
-						usersLogin.erase(usersLogin.begin() + i);
-						--i;
+					else if(checkStatus == '*') {
+						string usernameFinish = messSendServer.substr(1);
+						cout << "Username: " + usersLogin[i].clientName + " yeu cau ket noi toi " + usernameFinish << endl;
+						for (auto it : usersLogin) {
+							if (it.clientName == usernameFinish) {
+								string requestConnect = "*" + usersLogin[i].clientName;
+								send(it.clientSocket, requestConnect.c_str(), sizeof(requestConnect), 0);
+								break;
+							}
+						}
+					}
+					else if (checkStatus == '^') {
+						string usernameRespomse = messSendServer.substr(1);
+						cout << "Username: " + usersLogin[i].clientName + " chap nhan yeu cau ket noi cua " + usernameRespomse << endl;
+						for (auto it : usersLogin) {
+							if (it.clientName == usernameRespomse) {
+								string requestConnect = "$" + usersLogin[i].clientName;
+								send(it.clientSocket, requestConnect.c_str(), sizeof(requestConnect), 0);
+								break;
+							}
+						}
+					}
+					else if (checkStatus == '@') {
+						string usernameRespomse = messSendServer.substr(1);
+						cout << "Username: " + usersLogin[i].clientName + "khong chap nhan yeu cau ket noi cua " + usernameRespomse << endl;
+						for (auto it : usersLogin) {
+							if (it.clientName == usernameRespomse) {
+								string requestConnect = "@" + usersLogin[i].clientName;
+								send(it.clientSocket, requestConnect.c_str(), sizeof(requestConnect), 0);
+								break;
+							}
+						}
 					}
 					else {
 						regex re("-+");  
@@ -120,6 +152,7 @@ int main() {
 				}
 			}
 		}
+		
 		
 	}
 }
