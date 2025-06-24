@@ -93,13 +93,13 @@ int main() {
 							usersLogin[i].clientName = name;
 							cout << "Username: " << usersLogin[i].clientName << " vua dang nhap vao he thong" << endl;
 							string notionLogin = "/l";
-							send(usersLogin[i].clientSocket, notionLogin.c_str(), sizeof(notionLogin), 0);
+							send(usersLogin[i].clientSocket, notionLogin.c_str(), notionLogin.size(), 0);
 							for (auto itt : usersLogin) {
 								string listUserlogin = "-";
 								for (auto it : usersLogin) {
 									listUserlogin += it.clientName + "-";
 								}
-								send(itt.clientSocket, listUserlogin.c_str(), size(listUserlogin), 0);
+								send(itt.clientSocket, listUserlogin.c_str(), listUserlogin.size(), 0);
 							}
 						}
 					}
@@ -109,7 +109,7 @@ int main() {
 						for (auto it : usersLogin) {
 							if (it.clientName == usernameFinish) {
 								string requestConnect = "*" + usersLogin[i].clientName;
-								send(it.clientSocket, requestConnect.c_str(), sizeof(requestConnect), 0);
+								send(it.clientSocket, requestConnect.c_str(), requestConnect.size(), 0);
 								break;
 							}
 						}
@@ -120,7 +120,7 @@ int main() {
 						for (auto it : usersLogin) {
 							if (it.clientName == usernameRespomse) {
 								string requestConnect = "$" + usersLogin[i].clientName;
-								send(it.clientSocket, requestConnect.c_str(), sizeof(requestConnect), 0);
+								send(it.clientSocket, requestConnect.c_str(), requestConnect.size(), 0);
 								break;
 							}
 						}
@@ -131,7 +131,7 @@ int main() {
 						for (auto it : usersLogin) {
 							if (it.clientName == usernameRespomse) {
 								string requestConnect = "@" + usersLogin[i].clientName;
-								send(it.clientSocket, requestConnect.c_str(), sizeof(requestConnect), 0);
+								send(it.clientSocket, requestConnect.c_str(), requestConnect.size(), 0);
 								break;
 							}
 						}
@@ -141,11 +141,13 @@ int main() {
 						sregex_token_iterator it(messSendServer.begin(), messSendServer.end(), re, -1);
 						sregex_token_iterator end;
 						vector<string> result(it, end);
-						string clientTo = result[0];
-						string mess = result[1];
+						string clientSend = result[0];
+						string clientFinish = result[1];
 						for (auto it : usersLogin) {
-							if (it.clientName == clientTo) {
-								send(it.clientSocket, mess.c_str(), size(mess), 0);
+							if (it.clientName == clientFinish) {
+								cout << "Client: " + clientSend + " muon gui tin nhan cho user: " + clientFinish + ": Noi dung " + messSendServer << endl;
+								send(it.clientSocket, ("%" + messSendServer).c_str(), messSendServer.size() + 1, 0);
+								break;
 							}
 						}
 					}
