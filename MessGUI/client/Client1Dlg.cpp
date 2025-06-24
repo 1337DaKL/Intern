@@ -1,4 +1,4 @@
-﻿#include "pch.h"                         
+#include "pch.h"                         
 #include "framework.h"
 #include "Client1.h"
 #include "Client1Dlg.h"
@@ -69,7 +69,10 @@ BEGIN_MESSAGE_MAP(CClient1Dlg, CDialogEx)
 	ON_EN_CHANGE(IDC_EDIT1, &CClient1Dlg::OnEnChangeEdit1)
 	ON_BN_CLICKED(IDC_BUTTON1, &CClient1Dlg::OnBnClickedButton1)
 	ON_MESSAGE(WM_USER + 1, &CClient1Dlg::OnUpdateUserList)
+	ON_MESSAGE(WM_USER + 2, &CClient1Dlg::OnConnect)
+	ON_MESSAGE(WM_USER + 3 , &CClient1Dlg::OnRequest)
 	ON_COMMAND_RANGE(1001, 1099, &CClient1Dlg::OnClickButtonUserOnline)
+	ON_MESSAGE(WM_USER + 4 , &CClient1Dlg::OnNotionNoConnect)
 END_MESSAGE_MAP()
 BOOL CClient1Dlg::OnInitDialog()
 {
@@ -145,10 +148,6 @@ void CClient1Dlg::OnEnChangeEdit1()
 {
 }
 
-
-
-
-
 void getMesssenger(string username, CClient1Dlg* pDlg) {
 	while (true) {
 		char mess[100000] = { 0 };
@@ -172,49 +171,81 @@ void getMesssenger(string username, CClient1Dlg* pDlg) {
 			else if (string(mess)[0] == '*') {
 				string userRequest = string(mess).substr(1);
 				string notion = "Username: " + userRequest + " dang co yeu cau ket noi";
-				int resultsNotion = MessageBoxA(pDlg->GetSafeHwnd(), notion.c_str() , "notion", MB_YESNO);
-				if (resultsNotion == IDYES) {
-					string responseConnect = "^" + userRequest;
-					send(clientSocket, responseConnect.c_str(), sizeof(responseConnect), 0);
-					MessDgl messDgl;
-					messDgl.pParent = pDlg;
-					messDgl.clientSocket = clientSocket;
-					messDgl.usernameFinish = userRequest;
-					CString username;
-					pDlg->userName.GetWindowTextW(username);
-					CT2A name(username);
-					string usernameStart(name);
-					messDgl.username = usernameStart;
-					messDgl.DoModal();
-				}
-				else {
-					string responseConnect = "@" + userRequest;
-					send(clientSocket, responseConnect.c_str(), sizeof(responseConnect), 0);
-				}
+				char* msg = new char[notion.size() + 1];
+				strcpy_s(msg, notion.size() + 1, notion.c_str());
+				char* usernameCpy = new char[userRequest.size() + 1];
+				strcpy_s(usernameCpy, userRequest.size() + 1, userRequest.c_str());
+				::PostMessage(pDlg->m_hWnd, WM_USER + 2, (WPARAM)msg, (LPARAM)usernameCpy);
 			}
 			else if (string(mess)[0] == '$') {
 				string userFinish = string(mess).substr(1);
 				string notion = "Ket noi toi " + userFinish + " thanh cong";
-				int resultsNotion = MessageBoxA(pDlg->m_hWnd, notion.c_str(), "notion", MB_OK);
-					MessDgl messDgl;
-					messDgl.pParent = pDlg;
-					messDgl.clientSocket = clientSocket;
-					messDgl.usernameFinish = userFinish;
-					CString username;
-					pDlg->userName.GetWindowTextW(username);
-					CT2A name(username);
-					string usernameStart(name);
-					messDgl.username = usernameStart;
-					messDgl.DoModal();
+				char* msg = new char[notion.size() + 1];
+				char* usernameFinish = new char[userFinish.size() + 1];
+				strcpy_s(msg, notion.size() + 1, notion.c_str());
+				strcpy_s(usernameFinish, userFinish.size() + 1, userFinish.c_str());
+				::PostMessage(pDlg->m_hWnd, WM_USER + 3, (WPARAM)msg, (LPARAM)usernameFinish);
 			}
 			else if (string(mess)[0] == '@') {
 				string userFinish = string(mess).substr(1);
 				string notion = "Username: " + userFinish + " khong chap nhan ket noi";
-				MessageBoxA(pDlg->m_hWnd, notion.c_str(), "notion", MB_OK);
+				char* msg = new char[notion.size() + 1];
+				strcpy_s(msg, notion.size() + 1, notion.c_str());
+				::PostMessage(pDlg->m_hWnd, WM_USER + 4, (WPARAM)msg, 0);
 			}
 		}
 		Sleep(1000);
 	}
+}
+
+LRESULT CClient1Dlg::OnNotionNoConnect(WPARAM wParam, LPARAM lParam) {
+	const char* notion = reinterpret_cast<const char*>(wParam);
+	MessageBoxA(this->GetSafeHwnd(), notion, "notion", MB_OK);
+	return 0;
+}
+
+LRESULT CClient1Dlg::OnRequest(WPARAM wParam, LPARAM lParam) {
+	const char* notion = reinterpret_cast<const char*>(wParam);
+	int resultsNotion = MessageBoxA(this->GetSafeHwnd(), notion, "notion", MB_OK);
+	const char* userFinish = reinterpret_cast<const char*>(lParam);
+	MessDgl messDgl;
+	messDgl.pParent = this;
+	messDgl.clientSocket = clientSocket;
+	messDgl.usernameFinish = userFinish;
+	CString username;
+	this->userName.GetWindowTextW(username);
+	CT2A name(username);
+	string usernameStart(name);
+	messDgl.username = usernameStart;
+	messDgl.DoModal();
+	return 0;
+}
+
+LRESULT CClient1Dlg::OnConnect(WPARAM wParam, LPARAM lParam)
+{
+	const char* notion = reinterpret_cast<const char*>(wParam);
+	int resultsNotion = MessageBoxA(this->GetSafeHwnd(), notion, "Thông báo", MB_YESNO);
+	const char* username = reinterpret_cast<const char*>(lParam);
+	string userRequest = string(username);
+	if (resultsNotion == IDYES) {
+		string responseConnect = "^" + userRequest;
+		send(clientSocket, responseConnect.c_str(), sizeof(responseConnect), 0);
+		MessDgl messDgl;
+		messDgl.pParent = this;
+		messDgl.clientSocket = clientSocket;
+		messDgl.usernameFinish = userRequest;
+		CString username;
+		this->userName.GetWindowTextW(username);
+		CT2A name(username);
+		string usernameStart(name);
+		messDgl.username = usernameStart;
+		messDgl.DoModal();
+	}
+	else {
+		string responseConnect = "@" + userRequest;
+		send(clientSocket, responseConnect.c_str(), sizeof(responseConnect), 0);
+	}
+	return 0;
 }
 
 void CClient1Dlg::OnClickButtonUserOnline(UINT nID)
