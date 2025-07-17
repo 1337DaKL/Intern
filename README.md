@@ -67,7 +67,7 @@ Các kiến thức cần chú ý:
 - Các hàm API sau: FindFirstFileW, FindNextFileW, SetItemText, InsertColumn, LoadIcon, ...
 - Ngoài ra còn phải hiểu về handle đại diện cho cửa số chính, học kĩ con trỏ nữa(khái niệm này dùng khá nhiều), ...
 
-Link bài làm: [GUI File](https://github.com/1337DaKL/Intern/blob/main/GuiInforFile/GuiInforFileDlg.cpp)
+Link bài làm: [GUI File](https://github.com/1337DaKL/Intern/tree/main/GuiInforFile)
 
 <h2>Tuần 7 + 8: Làm dự án GUI. Sử dụng MFC làm một dự án nhắn tin real time sử dụng socket thư viện winsock. Yêu cầu đăng nhập vào hệ thống bằng tài khoản. Sau đó giao diện sẽ hiển thị toàn bộ người dùng đang online một các real time. Sau đó chọn một người dùng và kết nối nhắn tin real time với họ.</h2>
 
