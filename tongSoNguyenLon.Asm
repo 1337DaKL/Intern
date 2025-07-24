@@ -11,12 +11,12 @@ includelib c:\masm32\lib\kernel32.lib
 .data
 	InputData db 1000 dup (0)
 	OutputData db 1000 dup (0)
-	numberOne db "12345678" , 0 ;so thu nhat
-	numberTwo db "100000000000000000000000" , 0 ; so thu hai
+	numberOne db "100000000" , 0 ;so thu nhat
+	numberTwo db "2" , 0 ; so thu hai
 	lenOne dd ?
 	lenTwo dd ?
 	lenMax dd ?
-	nho dd 0
+	nho db 0
 	ketQua db 100 dup (0) ; mang luu ket qua 
 .code
 start:
@@ -27,9 +27,7 @@ start:
 	
 	;push offset InputData
 	;call ReadFileInput
-	mov eax, 0
-	mov edx, 0
-	mov ecx, 0
+	call resetRegister
 	; Bat dau code tu day 
 	;--------------------------------------
 	
@@ -79,13 +77,10 @@ saveMax:
 	mov dword ptr [lenMax] , edx ; luu vao bien lenMax
 	;-------------
 	;Ket thuc tim len max
-	
-	;Tinh tong hai so lom
-	;-------------------
-	xor eax , eax 
-	xor ebx , ebx 
-	xor ecx , ecx 
-	xor edx , edx 
+
+	;Tinh tong so lon
+	;---------------
+	call resetRegister
 	xor esi , esi 
 	xor edi , edi
 	
@@ -93,23 +88,125 @@ saveMax:
 	mov edi , offset numberTwo ;lay vi tri cua chuoi thu hai
 	mov ebx , lenOne ; lay do dai chuoi thu nhat
 	mov ecx , lenTwo ;lay do dai chuoi thu hai
+	mov eax , lenMax
+	add esi , ebx 
+	add edi , ecx 
+	cmp eax , ebx 
+	je TH1
+	jmp TH2
+TH1:;truong hop so 1 lon hon so 2
+	xor eax , eax 
+	xor ebx , ebx 
+	xor ecx , ecx 
+	xor edx , edx 
+	mov ecx , 0 ;bien dem ki tu truyen vao bien ket qua
+_loop1:
+	cmp ecx , lenTwo ; so sanh voi do dai cua chuoi ngan hon
+	je next ; neu bang thi ket thuc cong bth
+	mov al , byte ptr [esi - 1h] ; lay ki tu cuoi cung chuoi thu nhat
+	mov dl , byte ptr [edi - 1h] ; lay ki tu cuoi cung chu thu 2
+	sub al , '0'
+	sub dl , '0'
+	add al , dl  ; cong vao voi nhau
+	add al , nho ; cong them bit nho
+	mov dl , 10 ; 
+	xor ah , ah; truoc khi chia reset lai thanh ghi ah , thanh ghi ah se luu phan du , con thanh ghi al se luu phan chia het
+	div dl ; chia al cho dl
+	add ah , '0' ; cong them de chuyen thanh ki tu 
+	mov byte ptr [ketQua + ecx] , ah ; luu vao ket qua
+	mov byte ptr [nho] , al ; ghi thanh bit nho
+	inc ecx ; cong them
+	dec esi ; tru di 
+	dec edi
+	jmp _loop1
+next: ; tuong tu nhu the nhung thay vi cong ca 2 thi chi can cong nho voi chuoi thu nhat thoi
+	cmp ecx , lenOne
+	je endTinhTong
+	mov al , byte ptr [esi - 1h]
+	sub al , '0'
+	add al , nho
+	mov dl , 10
+	xor ah , ah
+	div dl
+	add ah , '0'
+	mov byte ptr [ketQua + ecx ] , ah
+	mov byte ptr [nho] , al
+	inc ecx 
+	dec esi
+	jmp next
+endTinhTong: ; truong hop nho van con thi van cong vao trong chuoi 
+	cmp nho , 1
+	jne tinhTong
+	mov byte ptr [ketQua + ecx] , '1'
+	mov byte ptr [ketQua + ecx + 1] , 0
+	jmp tinhTong
+TH2: ;Truong hop so 2 lon hon so 1 tuong tu nhu truong hop 1 thoi
+	call resetRegister
 	
-	
+	mov ecx , 0
+_loop2:
+	cmp ecx , lenOne
+	je next2
+	mov al , byte ptr [esi - 1h]
+	mov dl , byte ptr [edi - 1h]
+	sub al , '0'
+	sub dl , '0'
+	add al , dl
+	add al , nho
+	mov dl , 10
+	xor ah , ah
+	div dl
+	add ah, '0'
+	mov byte ptr [ketQua + ecx ] , ah
+	mov byte ptr [nho] , al
+	inc ecx
+	dec esi
+	dec edi
+	jmp _loop2
+next2:
+	cmp ecx , lenTwo
+	je endTinhTong2
+	mov al , byte ptr[edi - 1h]
+	sub al , '0'
+	add al , nho
+	mov dl , 10
+	xor ah , ah
+	div dl
+	add ah , '0'
+	mov byte ptr [ketQua + ecx] , ah
+	mov byte ptr [nho] , al
+	inc ecx
+	dec edi
+	jmp next2
+endTinhTong2:
+	cmp nho , 1
+	jne tinhTong
+	mov byte ptr [ketQua + ecx] , '1'
+	mov byte ptr [ketQua + ecx + 1] , 0
+	jmp tinhTong
+tinhTong:
+	push 0 
+	push 0
+	push offset ketQua
+	push 0
+	call MessageBox
 	;-------------------
 	;End tinh tong so lon 
-	
-	
-	
-	
-	
-	
-	
-	
-	
 	
 	;--------------------------------------
 	;push edx
 	;call WriteFileOutput
-	;push 0
-	;Call ExitProcess
+	push 0
+	Call ExitProcess
+	
+;Day la doan chua cac ham function
+;-------------------------------
+resetRegister:
+	xor eax , eax 
+	xor ebx , ebx
+	xor ecx , ecx
+	xor edx , edx
+	ret
+;---------------------------------
+;End cac ham fuction
 end start
