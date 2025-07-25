@@ -11,13 +11,16 @@ includelib c:\masm32\lib\kernel32.lib
 .data
 	InputData db 1000 dup (0)
 	OutputData db 1000 dup (0)
-	numberOne db "100000000" , 0 ;so thu nhat
-	numberTwo db "2" , 0 ; so thu hai
+	numberOne db "000000000000000000000000000000000000000000000000009999999999999" , 0 ;so thu nhat
+	numberTwo db "900000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000" , 0 ; so thu hai
 	lenOne dd ?
 	lenTwo dd ?
 	lenMax dd ?
 	nho db 0
 	ketQua db 100 dup (0) ; mang luu ket qua 
+	result db 100 dup (0);luu ket qua nhung nguoc vi khi luu trong bien ketQua bi nguoc
+	lenResult dd ? ; do dai cua ket qua
+	resultSave db 100 dup(0) 
 .code
 start:
 	;Test
@@ -138,7 +141,6 @@ endTinhTong: ; truong hop nho van con thi van cong vao trong chuoi
 	cmp nho , 1
 	jne tinhTong
 	mov byte ptr [ketQua + ecx] , '1'
-	mov byte ptr [ketQua + ecx + 1] , 0
 	jmp tinhTong
 TH2: ;Truong hop so 2 lon hon so 1 tuong tu nhu truong hop 1 thoi
 	call resetRegister
@@ -182,16 +184,71 @@ endTinhTong2:
 	cmp nho , 1
 	jne tinhTong
 	mov byte ptr [ketQua + ecx] , '1'
-	mov byte ptr [ketQua + ecx + 1] , 0
 	jmp tinhTong
-tinhTong:
-	push 0 
-	push 0
-	push offset ketQua
-	push 0
-	call MessageBox
 	;-------------------
 	;End tinh tong so lon 
+tinhTong:
+	;TInh lai do dai cua ket qua 
+	;-------------------------
+	cmp nho , 1
+	mov dword ptr [lenResult] , 0
+	jne reverseResult
+	mov dword ptr [lenResult] , 1
+	jmp reverseResult
+reverseResult:
+	call resetRegister
+	mov eax , lenResult
+	mov edx , lenMax
+	add eax , edx
+	mov dword ptr [lenResult] , eax
+	;-------------------------
+	;End tinh lai do dai cua ket qua 
+	
+	;Lat nguoc lai
+	;------------
+	call resetRegister
+	mov ecx , 0h
+_loopReverse:
+	cmp ecx , lenResult
+	je WriteFileFunc
+	mov ebx , lenResult
+	sub ebx , ecx
+	mov al , byte ptr [ketQua + ecx]
+	mov byte ptr [result + ebx  - 1h] , al
+	inc ecx
+	jmp _loopReverse
+WriteFileFunc:
+	;------------
+	;End lat nguoc lai
+	
+	;Xoa cac so 0 o dau
+	;----------------------
+	call resetRegister
+	mov ecx , 0
+	mov ebx , 0
+_loopDeleteZeno:
+	cmp byte ptr [result + ecx] , '0'
+	jne saveInFile
+	inc ecx
+	jmp _loopDeleteZeno
+saveInFile:
+	cmp ecx , lenResult
+	je save
+	mov dl , byte ptr [result + ecx]
+	mov byte ptr [resultSave + ebx], dl
+	inc ebx 
+	inc ecx
+	jmp saveInFile
+save:
+	mov ebx , lenResult
+	mov byte ptr [resultSave + ebx ] , 0
+	;----------------------
+	;End xoa cac so 0 o dau
+	push 0
+	push 0
+	push offset resultSave
+	push 0
+	call MessageBox
 	
 	;--------------------------------------
 	;push edx
