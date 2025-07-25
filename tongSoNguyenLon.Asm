@@ -9,27 +9,73 @@ include IO.asm
 includelib c:\masm32\lib\user32.lib
 includelib c:\masm32\lib\kernel32.lib
 .data
-	InputData db 1000 dup (0)
-	OutputData db 1000 dup (0)
-	numberOne db "000000000000000000000000000000000000000000000000009999999999999" , 0 ;so thu nhat
-	numberTwo db "900000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000" , 0 ; so thu hai
+	InputData db  "C:\Users\LuongTD\Downloads\TinhTongHaiSo\Input.txt" , 0
+	OutputData db "C:\Users\LuongTD\Downloads\TinhTongHaiSo\Output.txt" , 0
+	data db 512  dup(0);du lieu se duoc luu vao day
+	real dd ?
+	numberOne db 512  dup (0)  ;so thu nhat
+	numberTwo db 512  dup(0); so thu hai
 	lenOne dd ?
 	lenTwo dd ?
 	lenMax dd ?
 	nho db 0
-	ketQua db 100 dup (0) ; mang luu ket qua 
-	result db 100 dup (0);luu ket qua nhung nguoc vi khi luu trong bien ketQua bi nguoc
+	ketQua db 512  dup (0) ; mang luu ket qua 
+	result db 512  dup (0);luu ket qua nhung nguoc vi khi luu trong bien ketQua bi nguoc
 	lenResult dd ? ; do dai cua ket qua
-	resultSave db 100 dup(0) 
+	resultSave db 512  dup(0) 
 .code
 start:
 	;Test
 	;----
 	;----
 	;End test
+	;Doc data tu file
+	;----------------
+	;mo file
+	push 0
+	push 80h ;file atrribute normal
+	push 3; open exitsting
+	push 0
+	push 0 ; share read and write
+	push 10000000h ; read and write
+	push offset InputData
+	call CreateFile
+	;doc noi dung
+	push 0
+	push offset real
+	push 1000
+	push offset data
+	push eax
+	call ReadFile
 	
-	;push offset InputData
-	;call ReadFileInput
+	;; tach so thu nhat
+	call resetRegister
+	mov ecx , 0
+	mov ebx , 0
+	
+_loopTachSoThuNhat:
+	cmp byte ptr [data + ecx] , 20h
+	je TachSoThuHai
+	mov al , byte ptr [data + ecx] 
+	mov byte ptr [numberOne + ecx] , al
+	inc ecx 
+	jmp _loopTachSoThuNhat
+TachSoThuHai:
+	mov byte ptr [numberOne + ecx] , 0
+	inc ecx
+	jmp _loopTachSoThuHai
+_loopTachSoThuHai:
+	cmp ecx , dword ptr [real]
+	je main
+	mov al , byte ptr [data + ecx]
+	mov byte ptr [numberTwo + ebx] , al
+	inc ecx 
+	inc ebx
+	jmp _loopTachSoThuHai
+main:
+	mov byte ptr [numberTwo + ebx] , 0
+	;----------------
+	;End doc data tu file
 	call resetRegister
 	; Bat dau code tu day 
 	;--------------------------------------
@@ -190,69 +236,86 @@ endTinhTong2:
 tinhTong:
 	;TInh lai do dai cua ket qua 
 	;-------------------------
-	cmp nho , 1
+	cmp nho , 1 ; xem nho con khong neu con thi can phai cong them 1
 	mov dword ptr [lenResult] , 0
 	jne reverseResult
 	mov dword ptr [lenResult] , 1
 	jmp reverseResult
 reverseResult:
 	call resetRegister
-	mov eax , lenResult
+	mov eax , lenResult ; sau do cong them gia tri cua len max
 	mov edx , lenMax
 	add eax , edx
-	mov dword ptr [lenResult] , eax
+	mov dword ptr [lenResult] , eax ; luu do dai cua ket qua vao
 	;-------------------------
 	;End tinh lai do dai cua ket qua 
 	
 	;Lat nguoc lai
 	;------------
-	call resetRegister
+	call resetRegister ; reset
 	mov ecx , 0h
 _loopReverse:
-	cmp ecx , lenResult
+	cmp ecx , lenResult ; lap tung byte cua bien do dai
 	je WriteFileFunc
 	mov ebx , lenResult
 	sub ebx , ecx
-	mov al , byte ptr [ketQua + ecx]
+	mov al , byte ptr [ketQua + ecx] ; bien dau cau ketQua se duoc dat vao vi tri cuoi cua result
 	mov byte ptr [result + ebx  - 1h] , al
 	inc ecx
 	jmp _loopReverse
-WriteFileFunc:
 	;------------
 	;End lat nguoc lai
-	
+WriteFileFunc:
 	;Xoa cac so 0 o dau
 	;----------------------
 	call resetRegister
 	mov ecx , 0
 	mov ebx , 0
-_loopDeleteZeno:
+_loopDeleteZeno: ; lap qua result neu la ki tu 0 thi bo qua
 	cmp byte ptr [result + ecx] , '0'
 	jne saveInFile
 	inc ecx
 	jmp _loopDeleteZeno
 saveInFile:
+; sau do luu lai vao mot bien moi
 	cmp ecx , lenResult
 	je save
 	mov dl , byte ptr [result + ecx]
-	mov byte ptr [resultSave + ebx], dl
+	mov byte ptr [resultSave + ebx], dl  
 	inc ebx 
 	inc ecx
 	jmp saveInFile
 save:
 	mov ebx , lenResult
-	mov byte ptr [resultSave + ebx ] , 0
+	mov byte ptr [resultSave + ebx ] , 0 ; them /0 de cho biet dau ket thuc cua 1 string
 	;----------------------
 	;End xoa cac so 0 o dau
-	push 0
-	push 0
-	push offset resultSave
-	push 0
-	call MessageBox
 	
+	;Luu vao file
+	;------------
+	;xoa file cu
+	push offset OutputData
+	call DeleteFile
+	;mo file
+	call resetRegister
+	push 0
+	push 80h ;file atrribute normal
+	push 4; open alway
+	push 0
+	push 0 ; share read and write
+	push 10000000h ; read and write
+	push offset OutputData
+	call CreateFile
+	;ghi vao file
+	push 0
+	push offset real
+	push dword ptr [lenResult]
+	push offset resultSave
+	push eax
+	call WriteFile
+	;-----------
+	;End luu vao file
 	;--------------------------------------
-	;push edx
-	;call WriteFileOutput
 	push 0
 	Call ExitProcess
 	
