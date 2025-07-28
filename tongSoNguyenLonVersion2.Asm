@@ -17,6 +17,7 @@ includelib c:\masm32\lib\kernel32.lib
 	posMid dd ?
 	real dd ?
 	byteFile db ?
+	remember db ?
 .code
 start:
 	call reset
@@ -36,6 +37,7 @@ start:
 	push 0
 	push handleFile
 	call SetFilePointer ; di chuyen con tro toi cuoi file
+	dec eax
 	mov dword ptr [posEnd2], eax ; lay vi tri cuoi file va cung la cij tri cuoi cua chuoi thu hai
 	
 	push 0
@@ -71,8 +73,98 @@ endLoopFindPos:
 	call reset
 	
 	;; logic cong
+loopSum:
+	cmp dword ptr [posEnd1] , 0
+	jl logicSum1
+	cmp postEnd2 , posMid
+	je logicSum2
+	push 0
+	push 0
+	push posEnd1
+	push handleFile 
+	call SetFilePointer 
 	
+	push 0
+	push offset real
+	push 1
+	push offset byteFile
+	push handleFile
+	call ReadFile 
 	
+	mov bl , byte ptr [byteFile]
+	sub bl , '0'
+	
+	push 0
+	push 0
+	push posEnd2
+	push handleFile 
+	call SetFilePointer 
+	
+	push 0
+	push offset real
+	push 1
+	push offset byteFile
+	push handleFile
+	call ReadFile 
+	
+	mov al , byte ptr [byteFile]
+	sub al , '0'
+	add al , bl
+	
+	mov dl , 10
+	xor ah , ah
+	div dl
+	
+	mov byte ptr [remember] , al
+	;logic ghi vao file
+	
+	;end logic ghi vao file
+	
+	mov eax , dword ptr [posEnd1]
+	dec eax
+	mov dword ptr [posEnd1] , eax
+	
+	mov eax , dword ptr [posEnd2]
+	dec eax
+	mov dword ptr [posEnd2], eax
+
+logicSum1:
+	cmp posEnd2 , posMid
+	je endProgram
+	push 0
+	push 0
+	push posEnd2
+	push handleFile
+	call SetFilePointer 
+	
+	push 0
+	push offset real
+	push 1
+	push offset byteFile
+	push handleFile
+	call ReadFile 
+	
+	mov al , byte ptr [byteFile]
+	sub al , '0'
+	cmp remember , 1
+	je call addRemember
+	
+	mov dl , 10
+	xor ah , ah
+	div dl
+	mov byte ptr [remember] , al
+	
+	mov eax , dword ptr [posEnd2]
+	dec eax
+	mov dword ptr [posEnd2], eax
+	jmp logicSum1
+logicSum2:
+endProgram:
+	push 0
+	call ExitProcess
+addRemember:
+	inc al
+	ret
 reset:
 	xor eax , eax
 	xor ebx , ebx
