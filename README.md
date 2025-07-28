@@ -128,7 +128,6 @@ Trong tuần này có tự tìm hiểu lại một số lí thuyết cơ bản t
 - Cấu trúc một dòng lệnh trong assembly
 - Cấu trúc chương trình assembly
 
-Bài tập tự luyện thêm assembly(Do ngôn ngữ lập trình này khá khó nên học kĩ từng kiến thức một, không nên học qua loa): [Learn assembly](https://github.com/1337DaKL/Assembly)
 
 <h2>Tuần 12: </h2>
 
