@@ -11,13 +11,17 @@ includelib c:\masm32\lib\user32.lib
 includelib c:\masm32\lib\kernel32.lib
 .data
 	pathFileInput db "E:\malware document\TinhTongHaiSo\Input.txt" , 0
+	pathFileOutput db "E:\malware document\TinhTongHaiSo\Output.txt" , 0
 	handleFile dd ?
+	handleFileOutput dd ?
 	posEnd1 dd ?
 	posEnd2 dd ?
 	posMid dd ?
 	real dd ?
 	byteFile db ?
 	remember db ?
+	byteWriteFile db ?
+	posStart dd 0h
 .code
 start:
 	call reset
@@ -31,6 +35,15 @@ start:
 	push offset pathFileInput
 	call CreateFile ; Mo file input
 	mov dword ptr [handleFile] , eax ; lay handle file
+	push 0
+	push 128
+	push 3
+	push 0
+	push 0
+	push 40000000h 
+	push offset pathFileOutput
+	call CreateFile 
+	mov dword ptr [handleFileOutput] , eax
 	
 	push 2
 	push 0
@@ -76,7 +89,8 @@ endLoopFindPos:
 loopSum:
 	cmp dword ptr [posEnd1] , 0
 	jl logicSum1
-	cmp postEnd2 , posMid
+	mov ecx , dword ptr [posEnd2]
+	cmp ecx , dword ptr [posMid]
 	je logicSum2
 	push 0
 	push 0
@@ -110,14 +124,14 @@ loopSum:
 	mov al , byte ptr [byteFile]
 	sub al , '0'
 	add al , bl
-	
+	add al , byte ptr [remember]
 	mov dl , 10
 	xor ah , ah
 	div dl
 	
 	mov byte ptr [remember] , al
 	;logic ghi vao file
-	
+	call writeFileFuc
 	;end logic ghi vao file
 	
 	mov eax , dword ptr [posEnd1]
@@ -127,10 +141,11 @@ loopSum:
 	mov eax , dword ptr [posEnd2]
 	dec eax
 	mov dword ptr [posEnd2], eax
-
+	jmp loopSum
 logicSum1:
-	cmp posEnd2 , posMid
-	je endProgram
+	mov ecx , dword ptr [posEnd2]
+	cmp ecx , dword ptr [posMid]
+	je bitRemember
 	push 0
 	push 0
 	push posEnd2
@@ -146,24 +161,103 @@ logicSum1:
 	
 	mov al , byte ptr [byteFile]
 	sub al , '0'
-	cmp remember , 1
-	je call addRemember
+	add al , byte ptr [remember]
 	
 	mov dl , 10
 	xor ah , ah
 	div dl
 	mov byte ptr [remember] , al
-	
+	;logic ghi vao trong file
+	call writeFileFuc
+	;end logic ghi vao trong file 
 	mov eax , dword ptr [posEnd2]
 	dec eax
 	mov dword ptr [posEnd2], eax
 	jmp logicSum1
 logicSum2:
-endProgram:
+	cmp dword ptr [posEnd1] , 0
+	jl bitRemember
+	push 0
+	push 0
+	push posEnd1
+	push handleFile
+	call SetFilePointer 
+	
+	push 0
+	push offset real
+	push 1
+	push offset byteFile
+	push handleFile
+	call ReadFile 
+	
+	mov al , byte ptr [byteFile]
+	sub al , '0'
+	add al , byte ptr [remember]
+	
+	mov dl , 10
+	xor ah , ah
+	div dl
+	mov byte ptr [remember] , al
+	;logic ghi vao trong file
+	call writeFileFuc
+	;end logic ghi vao file
+	mov eax , dword ptr [posEnd1]
+	dec eax
+	mov dword ptr [posEnd1] , eax
+	jmp logicSum2
+bitRemember:
+	cmp byte ptr [remember] , 1
+	je addBitRemember
+	jmp main
+addBitRemember:
+	push 0
+	push 0
+	push posStart
+	push handleFileOutput
+	call SetFilePointer 
+	
+	add byte ptr [remember] , '0'
+	push 0
+	push offset real
+	push 1
+	push offset remember
+	push handleFileOutput
+	call WriteFile
+	
+	add dword ptr [posStart] , 1 
+	jmp main
+main:
+	push 0
+	push 0
+	push posStart
+	push handleFileOutput
+	call SetFilePointer 
+	
+	push handleFileOutput
+	call SetEndOfFile 
+	
 	push 0
 	call ExitProcess
-addRemember:
-	inc al
+writeFileFuc:
+	add ah , '0'
+	mov byte ptr [byteWriteFile] , ah
+	
+	push 0
+	push 0
+	push posStart
+	push handleFileOutput
+	call SetFilePointer 
+	
+	push 0
+	push offset real
+	push 1
+	push offset byteWriteFile
+	push handleFileOutput
+	call WriteFile
+	
+	mov ecx , dword ptr [posStart]
+	inc ecx
+	mov dword ptr [posStart] , ecx
 	ret
 reset:
 	xor eax , eax
