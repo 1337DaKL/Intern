@@ -128,6 +128,39 @@ Trong tuần này có tự tìm hiểu lại một số lí thuyết cơ bản t
 - Cấu trúc một dòng lệnh trong assembly
 - Cấu trúc chương trình assembly
 
+<h2>Tuần 12 + 13: Làm bài tập làm quen với assembly</h2>
+
+<h3>Bài 1: Viết chương trình tính tổng hai số hệ thập phân. 2 số được đọc từ file đầu vào Input.txt và ghi ra kết quả ra file Outphut.txt. Chú ý Phải tính được số hàng tỉ trở lên</h3>
+
+Kiến thức cần chú ý: 
+- Các kiểu dữ liệu như byte , word , dword
+- các thanh ghi eax, ebx, ecx, edx, esi, epi
+- các câu lệnh như mov , inc , dec , div , add , sub , jl , je, jmp
+- Sử dụng các nhãn, logic for , while , do while , if else trong assembly
+- Cách gọi các api trong assembly như ReadFile, CreateFile , SetFilePoint, ...
+
+Link bài tập: [Sum](https://github.com/1337DaKL/Intern/blob/main/tongSoNguyenLon.Asm)
+
+Tuy nhiên với cách code như này bị giới hạn bởi khai báo bộ nhớ
+
+<img width="418" height="80" alt="image" src="https://github.com/user-attachments/assets/4a8d8b6d-ecf5-449c-bc54-d2b26ee84838" />
+
+Với phiên bản code như sau sẽ không bị giới hạn bộ nhớ có thể cộng các chữ số có hàng triệu số mà không lo khai báo bộ nhớ.
+
+Link bài tập: [sum2](https://github.com/1337DaKL/Intern/blob/main/tongSoNguyenLonVersion2.Asm)
+
+<h3>Bài 2: Liệt kê đầy đủ các file trong 1 folder. Liệt kê cả các file trong thư mục con và liệt kê theo đuôi file</h3>
+
+Kiến thức cần chú ý:
+- Ngoài các kiến thức cũ thì cần tìm hiểu thêm cách viết hàm trong assembly. Cách viết hàm truyền tham số sử dụng proc
+- Cấu trúc dữ liệu trong assembly
+- Các api như FindFirstFile , FindNextFile , ....
+
+Link bài tập: [List File](https://github.com/1337DaKL/Intern/blob/main/listFile.Asm)
+
+<h2>Tuần 14: </h2>
+
+
 
 <h2>Tuần 12: </h2>
 
