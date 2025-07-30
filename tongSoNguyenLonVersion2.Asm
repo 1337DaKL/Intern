@@ -22,6 +22,10 @@ includelib c:\masm32\lib\kernel32.lib
 	remember db ?
 	byteWriteFile db ?
 	posStart dd 0h
+	posStartRe dd 0h
+	posEndRe dd ?
+	byteStart db ?
+	byteEnd   db ?
 .code
 start:
 	call reset
@@ -40,7 +44,7 @@ start:
 	push 3
 	push 0
 	push 0
-	push 40000000h 
+	push 0C0000000h 
 	push offset pathFileOutput
 	call CreateFile 
 	mov dword ptr [handleFileOutput] , eax
@@ -236,6 +240,76 @@ main:
 	push handleFileOutput
 	call SetEndOfFile 
 	
+	
+	push 2
+	push 0
+	push 0
+	push handleFileOutput
+	call SetFilePointer ; di chuyen con tro toi cuoi file
+	dec eax
+	mov dword ptr [posEndRe], eax 
+	
+	
+loop_re:
+	mov eax , dword ptr [posStartRe]
+	cmp dword ptr [posEndRe] , eax
+	jl endProgram
+	push 0
+	push 0
+	push posStartRe
+	push handleFileOutput
+	call SetFilePointer 
+	
+	push 0
+	push 0
+	push 1
+	push offset byteStart
+	push handleFileOutput
+	call ReadFile 
+	
+	push 0
+	push 0
+	push posEndRe
+	push handleFileOutput
+	call SetFilePointer 
+	
+	push 0
+	push 0
+	push 1
+	push offset byteEnd
+	push handleFileOutput
+	call ReadFile 
+	
+	push 0
+	push 0
+	push posStartRe
+	push handleFileOutput
+	call SetFilePointer 
+	
+	push 0
+	push 0
+	push 1
+	push offset byteEnd
+	push handleFileOutput
+	call WriteFile
+	
+	push 0
+	push 0
+	push posEndRe
+	push handleFileOutput
+	call SetFilePointer 
+	
+	push 0
+	push 0
+	push 1
+	push offset byteStart
+	push handleFileOutput
+	call WriteFile 
+	    
+	inc dword ptr [posStartRe]
+	dec dword ptr [posEndRe]
+	jmp loop_re
+endProgram:
 	push 0
 	call ExitProcess
 writeFileFuc:
