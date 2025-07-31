@@ -26,10 +26,14 @@ WIN32_FIND_DATA ENDS
 	handleFileInput dd ?
 	handleFileOutput dd ?
 	folder db 1000 dup (0)
+	data db 1000 dup (0)
+	extend db 1000 dup (0)
 	wfd WIN32_FIND_DATA <>
 	rank db 10000 dup (0)
+	checkByte db 0
+	enterFile db 13
 .code
-loopFile proc  : ; ham nay duyet tat ca file trong 1 folder
+loopFile proc   ; ham nay duyet tat ca file trong 1 folder
  	LOCAL handleFind: dword
 startFuncFile:
  	mov ecx , 0
@@ -49,28 +53,66 @@ addEnd: ; them /* de dung lofic findFistFile
 	push offset wfd
 	push offset folder 
 	call FindFirstFile 
+	luu handle
 	mov dword ptr [handleFind] , eax
-	doWhile:
+	
+doWhile:
 	
 	cmp byte ptr [wfd.cFileName] , "." ; neu ten file chua . thi bo qua tuc laf gom, . la file hien tai va .. se la file truoc do
 	je next
-	
 	;;name ; logic nay se day ten file va rank cua no vao trong file
+	call checkEqu
+	cmp dword ptr [wfd.dwFileAttributes] , 00000010h
+	je checkExtendTrue
+	cmp byte ptr [checkByte] , 1
+	je checkExtendTrue
+	jmp checkExtendFalse
+checkExtendTrue:
+	;ghi vao file
+	mov ecx , 0
+lenRankI:
+	cmp byte ptr [rank + ecx] , 0
+	je addRankIn
+	inc ecx
+	jmp lenRankI
+addRankIn:
 	push 0
 	push 0
+	push ecx
 	push offset rank
+	push handleFileOutput
+	call WriteFile
+	
+	mov ecx , 0
+lenFileI:
+	cmp byte ptr [wfd.cFileName + ecx] , 0
+	je addFileIn
+	inc ecx
+	jmp lenFileI
+addFileIn:
+
 	push 0
-	call MessageBox
+	push 0
+	push ecx
+	push offset wfd.cFileName
+	push handleFileOutput
+	call WriteFile
 	
 	push 0
 	push 0
-	push offset wfd.cFileName
-	push 0
-	call MessageBox
+	push 1
+	push offset enterFile
+	push handleFileOutput
+	call WriteFile 
+	;end ghi vao file	
 	;;end name
+checkExtendFalse: 
 	cmp dword ptr [wfd.dwFileAttributes] , 00000010h ; neu file la folder 
 	jne next ; neu khong phai thi duyet file tiep theop
 	;lap den atribute moi
+	
+	;; luu handle vao mang
+	;;+ level len
 	push offset wfd.cFileName
 	call loopFileNew ; neu la folder thi goi logic duyet folder tiep theo
 	mov ecx , 0
@@ -84,8 +126,9 @@ subRank: ; loic giam rank di mot bac
 	mov byte ptr [rank +ecx] , 0
 	dec ecx
 	mov byte ptr [rank +ecx] , 0
+	
 	;end lap den atribute moi
-	next: ; duyet file tiep theo
+next: ; duyet file tiep theo
 	push offset wfd
 	push handleFind
 	call FindNextFile 
@@ -131,9 +174,42 @@ loopAddString: ;tien hanh cong vao ten folder moi
 endLoopFileNew:
 	mov byte ptr [folder + ecx ], 0
 	call loopFile ; goi lai ham duyet file
+	;tru di level
 	ret
 
 loopFileNew endp
+
+checkEqu proc ;ham check duoi giong nhau
+	xor ecx , ecx 
+	xor ebx , ebx
+lenExtend:
+	cmp byte ptr [extend + ecx] , 0
+	je lenFile
+	inc ecx
+	jmp lenExtend
+lenFile:
+	cmp byte ptr [wfd.cFileName + ebx] , 0
+	je nextCheckEqu
+	inc ebx
+	jmp lenFile
+nextCheckEqu:
+	cmp ecx , 0
+	jl checkTrue
+	mov dl , byte ptr [extend + ecx]
+	cmp byte ptr [wfd.cFileName + ebx] , dl
+	jne checkFalse
+	dec ecx
+	dec ebx 
+	jmp nextCheckEqu
+checkTrue:
+	mov byte ptr [checkByte] , 1
+	jmp endCheck
+checkFalse:
+	mov byte ptr [checkByte] , 0
+	jmp endCheck
+endCheck:	
+	ret
+checkEqu endp
 
 start: ;ham main
 	push offset fileNameInput
@@ -153,10 +229,10 @@ start: ;ham main
 	
 	push 0
 	push 128
-	push 3
+	push 2
 	push 0
 	push 0
-	push 0C0000000h  ; gom ca quyen doc va ghi
+	push 4  ; append
 	push offset fileNameOutput
 	call CreateFile 
 	mov dword ptr [handleFileOutput] , eax ; handle mo file output
@@ -164,13 +240,39 @@ start: ;ham main
 	push 0
 	push 0
 	push 1000 
-	push offset folder
+	push offset data
 	push handleFileInput
 	call ReadFile ; Doc noi dung file 
 	
-	call loopFile ; goi ham duyet folder
+	
+	xor ecx , ecx
+	xor ebx , ebx
+getFolder:
+	cmp byte ptr [data + ecx] , 13
+	je NextGetExtend
+	mov al , byte ptr [data + ecx]
+	mov byte ptr [folder + ecx] , al
+	inc ecx
+	jmp getFolder
+NextGetExtend:
+	add ecx , 2
+getExtend:
+	cmp byte ptr [data + ecx] , 0
+	je endProgram
+	mov al , byte ptr [data + ecx]
+	mov byte ptr [extend + ebx] , al
+	inc ebx
+	inc ecx
+	jmp getExtend
 	
 endProgram:
+	push 0
+	push 0
+	push offset extend
+	push 0
+	call MessageBox
+	call loopFile ; goi ham duyet folder
+	
 	push 0
 	call ExitProcess 
 end start
