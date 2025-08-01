@@ -25,12 +25,12 @@ WIN32_FIND_DATA ENDS
 	fileNameOutput db "C:\Users\LuongTD\Downloads\loopFile\Output.txt" , 0
 	handleFileInput dd ?
 	handleFileOutput dd ?
-	folder db 1000 dup (0)
+	folder db 100 dup (0)
 	data db 1000 dup (0)
-	extend db 1000 dup (0)
+	extend db 100 dup (0)
 	wfd WIN32_FIND_DATA <>
-	rank db 10000 dup (0)
-	checkByte db 0
+	rank db 1000 dup (0)
+	checkByte db 1000 dup (0)
 	enterFile db 13
 .code
 loopFile proc   ; ham nay duyet tat ca file trong 1 folder
@@ -53,9 +53,11 @@ addEnd: ; them /* de dung lofic findFistFile
 	push offset wfd
 	push offset folder 
 	call FindFirstFile 
-	luu handle
+	cmp eax , -1
+	jne nextFindFirstFile
+	ret
+nextFindFirstFile:
 	mov dword ptr [handleFind] , eax
-	
 doWhile:
 	
 	cmp byte ptr [wfd.cFileName] , "." ; neu ten file chua . thi bo qua tuc laf gom, . la file hien tai va .. se la file truoc do
@@ -175,6 +177,29 @@ endLoopFileNew:
 	mov byte ptr [folder + ecx ], 0
 	call loopFile ; goi lai ham duyet file
 	;tru di level
+	mov ecx , 0
+tinhLen:
+	cmp byte ptr [folder + ecx] , 0
+	je restore
+	inc ecx
+	jmp tinhLen
+restore:
+	cmp byte ptr [folder +ecx] , "\"
+	je endRestore
+	mov byte ptr [folder + ecx] , 0
+	dec ecx
+	jmp restore
+endRestore:
+	mov byte ptr [folder + ecx] , 0
+restore2:
+	cmp byte ptr [folder + ecx] , "\"
+	je endRestore2
+	mov byte ptr [folder + ecx] , 0
+	dec ecx
+	jmp restore2
+endRestore2:
+	inc ecx
+	mov byte ptr [folder + ecx] , "*"
 	ret
 
 loopFileNew endp
@@ -266,11 +291,6 @@ getExtend:
 	jmp getExtend
 	
 endProgram:
-	push 0
-	push 0
-	push offset extend
-	push 0
-	call MessageBox
 	call loopFile ; goi ham duyet folder
 	
 	push 0
