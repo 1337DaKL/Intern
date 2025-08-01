@@ -14,6 +14,7 @@ Một số lưu ý
 - Tài liệu về winapi chuẩn từ trang chủ của microsoft: [Document Microsoft](https://learn.microsoft.com/en-us/windows/win32/api/)
 - Tài liệu về winapi nhặt được từ trên mạng: [Document Internet](https://github.com/1337DaKL/Intern/blob/main/Basic_Win32_Programming.pdf)
 - 3 bài blog hay dễ hiểu nhất mình đọc về cơ bản assembly: [Part 1](https://viblo.asia/p/toi-da-hoc-assembly-32bit-nhu-the-nao-phan-1-V3m5WPPwKO7)    [Part 2](https://viblo.asia/p/toi-da-hoc-assembly-32bit-nhu-the-nao-phan-2-1Je5EmDG5nL)    [Part 3](https://viblo.asia/p/toi-da-hoc-assembly-32bit-nhu-the-nao-phan-3-GrLZDkr2Kk0)
+- Bài blog hay về các công cụ và bắt đầu với phân tích mã độc: [Document Malware](https://kienmanowar.wordpress.com/category/ollydbg-tutorials)
 
 ---
 Train
