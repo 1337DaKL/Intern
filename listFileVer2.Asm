@@ -12,6 +12,7 @@ includelib c:\masm32\lib\kernel32.lib
 	pathInput db "E:\malware document\loopFile\Input.txt", 0
 	pathOutput db "E:\malware document\loopFile\Output.txt", 0
 	errorPath db "Path can co dau \ o cuoi cung" , 0
+	enterFile db 13 
 	errorFindFile db "Folder khong ton tai", 0
 	handleInput dd ?
 	handleOutput dd ?
@@ -119,16 +120,75 @@ fileInFolder:
 	call FindNextFile 
 	cmp eax , 0
 	je endFuncFind
-	;Write In file
+	;Check
+    cmp byte ptr [fileInfor.cFileName]  , "."
+    je check
+    jmp ok
+check:
+	cmp byte ptr [fileInfor.cFileName + 1], "."
+	je fileInFolder
+	jmp ok
+ok:
+	cmp dword ptr [fileInfor.dwFileAttributes] , 16h ; vua la fodler vua la file an vua la folder he thong
+	je isFolder
+	cmp dword ptr [fileInfor.dwFileAttributes] , 11h ; vua la folder vua la file chi duoc doc
+	je isFolder
+	cmp dword ptr [fileInfor.dwFileAttributes] , 10h ; la folder
+	je isFolder
+	cmp dword ptr [fileInfor.dwFileAttributes] , 12h; la folder va bi an
+	je isFolder
+	cmp dword ptr [fileInfor.dwFileAttributes] , 31h ; folder ,  chi doc , dung de luu tru
+	je isFolder
+	cmp dword ptr [fileInfor.dwFileAttributes] , 17h ; folder ,  chi doc , dung de luu tru
+	je isFolder	
+	cmp dword ptr [fileInfor.dwFileAttributes] , 18h ; folder ,  chi doc , dung de luu tru
+	je isFolder	
+	cmp dword ptr [fileInfor.dwFileAttributes] , 00002416h ; folder ,  onedrove
+	je isFolder	
+	cmp dword ptr [fileInfor.dwFileAttributes] , 00002010h ; folder ,  ondrive
+	je isFolder	
+	cmp dword ptr [fileInfor.dwFileAttributes] , 00000431h ; chi doc, danh dau luu tru , mo moi tai ve
+	je isFolder	
+	jmp isFile
+isFolder:
 	
-	;Next
-	
+	jmp fileInFolder
+isFile:
+	push offset fileInfor.cFileName
+	call WriteFileFunc 
+	push offset fileInfor.dwFileAttributes
+	call printNoticeFunc 
+	push offset fileInfor.cFileName
+	call printNoticeFunc 
 	jmp fileInFolder
 endFuncFind:
 	ret
 
 getListFileInFolderFunc endp
 
+WriteFileFunc proc data : dword
+	call resetRegistryFunc
+lenName:
+	cmp byte ptr [data + ecx] , 0
+	je next
+	inc ecx
+	jmp lenName
+next:
+	push 0
+	push 0
+	push ecx
+	push data
+	push handleOutput
+	call WriteFile 
+	
+	push 0
+	push 0
+	push 1
+	push offset enterFile
+	push handleOutput
+	call WriteFile 
+	ret
+WriteFileFunc endp
 ;main
 Main:
 	;Open File
