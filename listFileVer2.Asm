@@ -20,6 +20,9 @@ includelib c:\masm32\lib\kernel32.lib
 	path db 900 dup (0) ; Duong dan file
 	extend db 100 dup (0) ; Phan mo rong cua file
 	fileInfor WIN32_FIND_DATA <>
+	rank dd 0
+	rankByte db "--" , 0
+	rankTmp dd 0
 ;code segment
 .code
 openFileFunc proc ;OpenFile
@@ -35,7 +38,7 @@ openFileFunc proc ;OpenFile
 	
 	push 0
 	push 128
-	push 3
+	push 2
 	push 0
 	push 0
 	push 4
@@ -95,6 +98,7 @@ loopPath:
 	jmp loopPath
 addStar:
 	mov byte ptr [path + ecx] , "*"
+	mov byte ptr [path + ecx + 1], 0
 	
 	push 2 ; Toi uu khi tim kiem file
 	push 0
@@ -106,11 +110,16 @@ addStar:
 	cmp eax , -1
 	je findFileError
 	jmp findFileSuccess
-findFileError:
-	push offset errorFindFile
-	call printNoticeFunc 
-	push 0
-	call ExitProcess 
+findFileError:	
+	call resetRegistryFunc
+getLenPathNew:
+	cmp byte ptr [path + ecx] , 0
+	je endProcError
+	inc ecx
+	jmp  getLenPathNew
+endProcError:
+	mov byte ptr [path + ecx - 1] , 0
+	ret
 findFileSuccess:
 	
 	mov dword ptr [handleFolder] , eax
@@ -120,6 +129,8 @@ fileInFolder:
 	call FindNextFile 
 	cmp eax , 0
 	je endFuncFind
+	;;;;;;;
+	
 	;Check
     cmp byte ptr [fileInfor.cFileName]  , "."
     je check
@@ -129,6 +140,43 @@ check:
 	je fileInFolder
 	jmp ok
 ok:
+	xor ecx , ecx
+	mov dword ptr [rankTmp] , 0h
+loopAddRank:
+	mov ecx , dword ptr [rankTmp]
+	cmp ecx , dword ptr [rank]
+	je addNameFile
+	inc dword ptr [rankTmp]
+	push 0
+	push 0
+	push 2
+	push offset rankByte
+	push handleOutput
+	call WriteFile
+	jmp loopAddRank
+addNameFile:
+	call resetRegistryFunc
+loopFindLen:
+	cmp byte ptr [fileInfor.cFileName + ecx] , 0
+	je writeInFile
+	inc ecx
+	jmp loopFindLen
+writeInFile:
+	
+	push 0
+	push 0
+	push ecx
+	push offset fileInfor.cFileName
+	push handleOutput
+	call WriteFile 
+	
+	push 0
+	push 0
+	push 1
+	push offset enterFile
+	push handleOutput
+	call WriteFile 
+	
 	cmp dword ptr [fileInfor.dwFileAttributes] , 16h ; vua la fodler vua la file an vua la folder he thong
 	je isFolder
 	cmp dword ptr [fileInfor.dwFileAttributes] , 11h ; vua la folder vua la file chi duoc doc
@@ -149,46 +197,65 @@ ok:
 	je isFolder	
 	cmp dword ptr [fileInfor.dwFileAttributes] , 00000431h ; chi doc, danh dau luu tru , mo moi tai ve
 	je isFolder	
-	jmp isFile
-isFolder:
-	
 	jmp fileInFolder
-isFile:
-	push offset fileInfor.cFileName
-	call WriteFileFunc 
-	push offset fileInfor.dwFileAttributes
-	call printNoticeFunc 
-	push offset fileInfor.cFileName
-	call printNoticeFunc 
+isFolder:
+	; Tao path cho folder moi
+	call resetRegistryFunc
+loopGetLenPath:
+	cmp byte ptr [path + ecx] , 0
+	je pathNew
+	inc ecx 
+	jmp loopGetLenPath
+pathNew:
+	cmp byte ptr [fileInfor.cFileName + ebx] , 0
+	je loopGetNewPath
+	mov dl , byte ptr [fileInfor.cFileName + ebx]
+	mov byte ptr [path + ecx - 1] ,  dl
+	inc ecx 
+	inc ebx
+	jmp pathNew	
+loopGetNewPath:
+	mov byte ptr [path + ecx - 1] ,  "\"
+	inc dword ptr [rank]
+	;de quy lap lai
+	call getListFileInFolderFunc
+	dec dword ptr [rank] 
+;Khoi phuc lai path cu
+	call resetRegistryFunc
+getLen2:
+	cmp byte ptr [path + ecx] , 0
+	je restore
+	inc ecx
+	jmp getLen2 
+restore:
+	dec ecx 
+	mov byte ptr [path + ecx] , 0
+	dec ecx
+restore2:
+	cmp byte ptr [path + ecx] , "\"
+	je restore3
+	mov byte ptr [path + ecx] , 0
+	dec ecx
+	jmp restore2
+restore3:	
+	inc ecx
+	mov byte ptr [path + ecx] , "*"
 	jmp fileInFolder
 endFuncFind:
+	
+	call resetRegistryFunc
+getLenPathNew2:
+	cmp byte ptr [path + ecx] , 0
+	je endProcError2
+	inc ecx
+	jmp  getLenPathNew2
+endProcError2:
+	mov byte ptr [path + ecx - 1] , 0
 	ret
 
 getListFileInFolderFunc endp
 
-WriteFileFunc proc data : dword
-	call resetRegistryFunc
-lenName:
-	cmp byte ptr [data + ecx] , 0
-	je next
-	inc ecx
-	jmp lenName
-next:
-	push 0
-	push 0
-	push ecx
-	push data
-	push handleOutput
-	call WriteFile 
-	
-	push 0
-	push 0
-	push 1
-	push offset enterFile
-	push handleOutput
-	call WriteFile 
-	ret
-WriteFileFunc endp
+
 ;main
 Main:
 	;Open File
