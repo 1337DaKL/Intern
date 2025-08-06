@@ -9,8 +9,8 @@ includelib c:\masm32\lib\user32.lib
 includelib c:\masm32\lib\kernel32.lib
 ;data segment
 .data
-	pathInput db "E:\malware document\loopFile\Input.txt", 0
-	pathOutput db "E:\malware document\loopFile\Output.txt", 0
+	pathInput db "C:\Users\LuongTD\Downloads\loopFile\Input.txt", 0
+	pathOutput db "C:\Users\LuongTD\Downloads\loopFile\Output.txt", 0
 	errorPath db "Path can co dau \ o cuoi cung" , 0
 	enterFile db 13 
 	errorFindFile db "Folder khong ton tai", 0
@@ -23,8 +23,38 @@ includelib c:\masm32\lib\kernel32.lib
 	rank dd 0
 	rankByte db "--" , 0
 	rankTmp dd 0
+	checkEqu dw 0
 ;code segment
 .code
+checkExtend proc	
+	call resetRegistryFunc
+getLenExtend:
+	cmp byte ptr [extend + ecx] , 0
+	je getLenName
+	inc ecx 
+	jmp getLenExtend
+getLenName:
+	cmp byte ptr [fileInfor.cFileName + ebx] , 0
+	je compare
+	inc ebx
+	jmp getLenName
+compare:
+	dec ebx
+	dec ecx
+	cmp ecx , 0
+	jl euq
+	mov dl , byte ptr [extend + ecx ]
+	cmp dl , byte ptr [fileInfor.cFileName + ebx]
+	je compare
+	mov byte ptr [checkEqu] , 0
+	jmp endFunc
+euq:
+	mov byte ptr [checkEqu] , 1
+	jmp endFunc
+endFunc:
+	ret
+
+checkExtend endp
 openFileFunc proc ;OpenFile
 	push 0
 	push 128
@@ -88,58 +118,7 @@ endFunc:
 
 checkPathFunc endp
 
-getListFileInFolderFunc proc
-	LOCAL handleFolder: dword
-	call resetRegistryFunc
-loopPath:
-	cmp byte ptr [path + ecx] , 0
-	je addStar
-	inc ecx
-	jmp loopPath
-addStar:
-	mov byte ptr [path + ecx] , "*"
-	mov byte ptr [path + ecx + 1], 0
-	
-	push 2 ; Toi uu khi tim kiem file
-	push 0
-	push 0
-	push offset fileInfor
-	push 1 ; lay nguyen ten va thuoc tinh thoi 
-	push offset path
-	call FindFirstFileEx 
-	cmp eax , -1
-	je findFileError
-	jmp findFileSuccess
-findFileError:	
-	call resetRegistryFunc
-getLenPathNew:
-	cmp byte ptr [path + ecx] , 0
-	je endProcError
-	inc ecx
-	jmp  getLenPathNew
-endProcError:
-	mov byte ptr [path + ecx - 1] , 0
-	ret
-findFileSuccess:
-	
-	mov dword ptr [handleFolder] , eax
-fileInFolder:	
-	push offset fileInfor
-	push handleFolder
-	call FindNextFile 
-	cmp eax , 0
-	je endFuncFind
-	;;;;;;;
-	
-	;Check
-    cmp byte ptr [fileInfor.cFileName]  , "."
-    je check
-    jmp ok
-check:
-	cmp byte ptr [fileInfor.cFileName + 1], "."
-	je fileInFolder
-	jmp ok
-ok:
+writeInFileFunc proc 
 	xor ecx , ecx
 	mov dword ptr [rankTmp] , 0h
 loopAddRank:
@@ -177,6 +156,69 @@ writeInFile:
 	push handleOutput
 	call WriteFile 
 	
+	ret
+
+writeInFileFunc endp
+getListFileInFolderFunc proc
+	LOCAL handleFolder: dword
+	call resetRegistryFunc
+loopPath:
+	cmp byte ptr [path + ecx] , 0
+	je addStar
+	inc ecx
+	jmp loopPath
+addStar:
+	mov byte ptr [path + ecx] , "*"
+	mov byte ptr [path + ecx + 1], 0
+	
+	push 2 ; Toi uu khi tim kiem file
+	push 0
+	push 0
+	push offset fileInfor
+	push 1 ; lay nguyen ten va thuoc tinh thoi 
+	push offset path
+	call FindFirstFileEx 
+	cmp eax , -1
+	je findFileError
+	jmp findFileSuccess
+findFileError:	
+	call resetRegistryFunc
+getLenPathNew:
+	cmp byte ptr [path + ecx] , 0
+	je endProcError
+	inc ecx
+	jmp  getLenPathNew
+endProcError:
+	mov byte ptr [path + ecx - 1] , 0
+	ret
+findFileSuccess:
+	
+	mov dword ptr [handleFolder] , eax
+fileInFolder:
+	call resetRegistryFunc
+resetName: 
+	cmp byte ptr [fileInfor.cFileName + ecx] , 0
+	je nextFileInfolder
+	mov byte ptr [fileInfor.cFileName + ecx] , 0
+	inc ecx
+	jmp resetName
+nextFileInfolder:
+	push offset fileInfor
+	push handleFolder
+	call FindNextFile 
+	cmp eax , 0
+	je endFuncFind
+	;;;;;;;
+	
+	;Check
+    cmp byte ptr [fileInfor.cFileName]  , "."
+    je check
+    jmp ok
+check:
+	cmp byte ptr [fileInfor.cFileName + 1], "."
+	je fileInFolder
+	jmp ok
+ok:
 	cmp dword ptr [fileInfor.dwFileAttributes] , 16h ; vua la fodler vua la file an vua la folder he thong
 	je isFolder
 	cmp dword ptr [fileInfor.dwFileAttributes] , 11h ; vua la folder vua la file chi duoc doc
@@ -197,8 +239,18 @@ writeInFile:
 	je isFolder	
 	cmp dword ptr [fileInfor.dwFileAttributes] , 00000431h ; chi doc, danh dau luu tru , mo moi tai ve
 	je isFolder	
+	jmp isFile
+isFile:
+	call checkExtend
+	cmp byte ptr [checkEqu] , 1
+	je equal
+	jmp endIsFile 
+equal:
+	call writeInFileFunc
+endIsFile:
 	jmp fileInFolder
 isFolder:
+	call writeInFileFunc
 	; Tao path cho folder moi
 	call resetRegistryFunc
 loopGetLenPath:
@@ -288,7 +340,13 @@ getExtend2: ; Get Extend
 	inc ebx
 	jmp getExtend2
 body: ; logic main for loop get all file
+	mov byte ptr [extend + ebx - 1] , 0
+	mov byte ptr [extend + ebx - 2 ] , 0
 	call checkPathFunc ; Check path
+	
+	
+	
+	
 	call getListFileInFolderFunc
 
 
