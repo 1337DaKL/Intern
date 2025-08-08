@@ -234,26 +234,8 @@ check:
 	je fileInFolder
 	jmp ok
 ok:
-	cmp dword ptr [fileInfor.dwFileAttributes] , 16h ; vua la fodler vua la file an vua la folder he thong
-	je isFolder
-	cmp dword ptr [fileInfor.dwFileAttributes] , 11h ; vua la folder vua la file chi duoc doc
-	je isFolder
-	cmp dword ptr [fileInfor.dwFileAttributes] , 10h ; la folder
-	je isFolder
-	cmp dword ptr [fileInfor.dwFileAttributes] , 12h; la folder va bi an
-	je isFolder
-	cmp dword ptr [fileInfor.dwFileAttributes] , 31h ; folder ,  chi doc , dung de luu tru
-	je isFolder
-	cmp dword ptr [fileInfor.dwFileAttributes] , 17h ; folder ,  chi doc , dung de luu tru
-	je isFolder	
-	cmp dword ptr [fileInfor.dwFileAttributes] , 18h ; folder ,  chi doc , dung de luu tru
-	je isFolder	
-	cmp dword ptr [fileInfor.dwFileAttributes] , 00002416h ; folder ,  onedrove
-	je isFolder	
-	cmp dword ptr [fileInfor.dwFileAttributes] , 00002010h ; folder ,  ondrive
-	je isFolder	
-	cmp dword ptr [fileInfor.dwFileAttributes] , 00000431h ; chi doc, danh dau luu tru , mo moi tai ve
-	je isFolder	
+	test dword ptr [fileInfor.dwFileAttributes] , 10h ; la folder
+	jnz isFolder	
 	jmp isFile
 isFile:
 	call checkExtend
