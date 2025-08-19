@@ -8,8 +8,8 @@ include windows.inc
 includelib c:\masm32\lib\user32.lib
 includelib c:\masm32\lib\kernel32.lib
 .data
-	pathInput db "C:\Users\LuongTD\Downloads\FE File\Bai2.exe",0
-	pathOutput db "C:\Users\LuongTD\Downloads\FE File\Results.txt" , 0	    
+	pathInput db "D:\Code\Homework Intern\PE Fomat\PE Fomat.exe",0
+	pathOutput db "D:\Code\Homework Intern\PE Fomat\Results.txt" , 0	    
 	handleInput dd ?
 	handleOutput dd ?
 	data db 100 dup (0)
@@ -36,14 +36,19 @@ includelib c:\masm32\lib\kernel32.lib
 	magic dw ?
 	ifanview dw ?
 	ngan db "---------------------------------------" , 0Dh , 0
-	rva db 4 dup (0)
-	virtualAddressSection db 4 dup (0)
-	virtualSizeSection db 4 dup (0)
-	rawAddressSection db 4 dup (0)
-	rawSizeSection db 4 dup (0)
-	maxSize db 4 dup (0)
-	offsetAddress db 4 dup (0)
-	offsetImport db 4 dup (0)
+	rva db 5 dup (0)
+	virtualAddressSection db 5 dup (0)
+	virtualSizeSection db 5 dup (0)
+	rawAddressSection db 5 dup (0)
+	rawSizeSection db 5 dup (0)
+	maxSize db 5 dup (0)
+	offsetAddress db 5 dup (0)
+	offsetImport db 5 dup (0)
+	ofts db 5 dup (0)
+	timeDateStamp db 5 dup (0)
+	forwarderChain db 5 dup(0)
+	nameRva db 5 dup (0)
+	iatImport db 5 dup (0)
 .code
 convertRvaToOffset proc
 	push 0
@@ -642,8 +647,49 @@ endGetSectionInfor:
 	mov edx , dword ptr [offsetAddress]
 	mov dword ptr [offsetImport] , edx ; sau do lay duoc oggset cua importFile 
 	
-
+	push 11
+	push offset iat
+	call write 
+	push 1
+	push offset ennter
+	call write
 	
+	push 0 
+	push 0
+	push dword ptr [offsetImport]
+	push dword ptr [handleInput]
+	call SetFilePointer 
+tableImport:
+	push 4
+	call readByte 
+	mov edx , dword ptr [data]   
+	mov dword ptr [ofts]  , edx  
+
+	cmp dword ptr [data] , 0
+	je endTableImport
+	
+	push 4
+	call readByte 
+	mov edx , dword ptr [data]
+	mov dword ptr [timeDateStamp]  , edx
+	
+	push 4
+	call readByte
+	mov edx , dword ptr[data]
+	mov dword ptr [forwarderChain] , edx
+	push 4
+	call readByte
+	mov edx , dword ptr [data]
+	mov dword ptr [nameRva] , edx
+	
+	push 4
+	call readByte
+	mov edx , dword ptr [data] 
+	mov dword ptr [iatImport] , edx
+	
+	
+	jmp tableImport
+endTableImport:
 	
 	
 	
