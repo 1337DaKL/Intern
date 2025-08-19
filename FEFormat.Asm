@@ -8,8 +8,8 @@ include windows.inc
 includelib c:\masm32\lib\user32.lib
 includelib c:\masm32\lib\kernel32.lib
 .data
-	pathInput db "C:\Users\LuongTD\Downloads\FE File\Bai2.exe",0
-	pathOutput db "C:\Users\LuongTD\Downloads\FE File\Results.txt" , 0	    
+	pathInput db "D:\Code\Homework Intern\PE Fomat\PE Fomat.exe",0
+	pathOutput db "D:\Code\Homework Intern\PE Fomat\Results.txt" , 0	    
 	handleInput dd ?
 	handleOutput dd ?
 	data db 100 dup (0)
@@ -20,6 +20,7 @@ includelib c:\masm32\lib\kernel32.lib
 	four db ?
 	by dw 16 dup (0)
 	pe db "PE: " , 0
+	sectionInfor db "SectionInfor: " , 0Dh, 0 
 	numnerOfSection db "NumnerOfSection: " , 0
 	imageBase db "ImageBase: " , 0
 	ep db "EP: " , 0
@@ -422,10 +423,37 @@ is64Bit:
 	call write
 	jmp endReadMagic
 endReadMagic:
-
+	push 15
+	push offset sectionInfor
+	call write 
+	 
+	
+ 	push 0
+ 	push 0
+ 	push 448 
+ 	push dword ptr [handleInput]
+ 	call SetFilePointer 
  	
+loopGetSectionInfor:
+	push 1
+	call readByte 
+	cmp byte ptr [data] , 0
+	je endGetSectionInfor
+	push 1
+	push 0
+	push -1
+	push dword ptr [handleInput]
+	call SetFilePointer 
 	
+	push 8
+	call readByte 
 	
+	push offset data
+	call printNotification 
+	
+	jmp loopGetSectionInfor
+	
+endGetSectionInfor:	
 	;End process
 	push 0
 	call ExitProcess 
