@@ -64,6 +64,8 @@ includelib c:\masm32\lib\kernel32.lib
 	ofsFunc db 4 dup (0)
 	offsetFunc db 4 dup (0)
 	hint db 2 dup(0)
+	nameFunc db 100 dup (0)
+	index2 dd 0
 .code
 convertRvaToOffset proc
 	push 0
@@ -758,59 +760,72 @@ endGetName:
 	push offset ennter 
 	call write 
 	;;;;;
-	mov dword ptr [cntFunc] , 0
 	
+	
+	mov dword ptr [index] , 0
+getNameok:	
+	push 40
+	push offset ngan
+	call write
 	mov edx , dword ptr [ofts]
 	mov dword ptr [rva] , edx
 	call convertRvaToOffset
-	
-	mov edx , dword ptr [offsetAddress]
-	mov dword ptr [offsetOFT] , edx
-	
-	mov edx , dword ptr [nameRva]
-	mov dword ptr [rva] , edx
-	call convertRvaToOffset
-	mov edx , dword ptr [offsetAddress]
-	mov dword ptr [offsetName] , edx
-	
+	mov ecx , dword ptr [index]
+	add ecx , dword ptr [offsetAddress]
 	push 0
 	push 0
-	push dword ptr [offsetOFT]
+	push  ecx
 	push dword ptr [handleInput]
 	call SetFilePointer 
-	
 	push 4
 	call readByte 
-	
-	mov  edx , dword ptr [data]
-	mov dword ptr [ofsFunc] , edx
-	
-	mov dword ptr [data] , edx
-	call convertRvaToOffset
-	mov edx , dword ptr [offsetAddress]
-	mov dword ptr [offsetFunc] , edx
-	
+	push 4
+	call writeByte 
+	cmp dword ptr [data] , 0
+	je endGetNameok
 	
 	;;
-getNameFunc:
-	mov edx , dword ptr [offsetName]
-	cmp dword ptr [offsetFunc] , edx
-	jnl endGetNamefunc
+	mov edx , dword ptr [data]
+	mov dword ptr [rva] , edx
+	call convertRvaToOffset
 	push 0
 	push 0
-	push dword ptr [offsetFunc]
+	push dword ptr [offsetAddress]
 	push dword ptr [handleInput]
 	call SetFilePointer 
 	
 	push 2
-	push readByte
-	mov dx , word ptr [data]
-	mov word ptr [hint] , dx
+	call readByte 
+	push 2
+	call writeByte  
 	
+	push 100
+	push offset nameFunc
+	call RtlZeroMemory 
+	mov dword ptr [index2] , 0
+okname:
+	push 1
+	call readByte 
 	
-	jmp getNameFunc
-endGetNamefunc:	
+	cmp byte ptr [data] , 0
+	je enOkName
 	
+	mov dl , byte ptr [data]
+	mov ecx , dword ptr [index2]
+	mov byte ptr [nameFunc + ecx] , dl
+	inc dword ptr [index2]
+	jmp okname
+enOkName:	
+	;; 
+	push 100
+	push offset nameFunc
+	call write 
+	push 1 
+	push offset ennter
+	call write 
+	add dword ptr [index] , 4
+	jmp getNameok
+endGetNameok:	
 	
 	;;;;;;;;
 	push 6
