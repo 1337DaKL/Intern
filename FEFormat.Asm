@@ -8,8 +8,8 @@ include windows.inc
 includelib c:\masm32\lib\user32.lib
 includelib c:\masm32\lib\kernel32.lib
 .data
-	pathInput db "D:\Code\Homework Intern\PE Fomat\PE Fomat.exe",0
-	pathOutput db "D:\Code\Homework Intern\PE Fomat\Results.txt" , 0	    
+	pathInput db "C:\Users\LuongTD\Downloads\FE File\Bai2.exe",0
+	pathOutput db "C:\Users\LuongTD\Downloads\FE File\Results.txt" , 0	    
 	handleInput dd ?
 	handleOutput dd ?
 	data db 100 dup (0)
@@ -31,24 +31,39 @@ includelib c:\masm32\lib\kernel32.lib
 	reloc db "Reloc Table: " , 0
 	iat db "IAT Table: ", 0
 	eat db "EAT Table: ", 0 
+	moduleName db "Module Name: ",0
+	OFTs db "OFTs: ", 0
+	Time db "TimeDateStamp: ",0
+	ForwarderChain db "ForwarderChain: ", 0
+	NameRVA db "Name RVA: " , 0
+	fts db "FTs (IAT): ", 0
 	mid db " = " , 0
 	phay db 22h ;dau "
 	magic dw ?
 	ifanview dw ?
 	ngan db "---------------------------------------" , 0Dh , 0
-	rva db 5 dup (0)
-	virtualAddressSection db 5 dup (0)
-	virtualSizeSection db 5 dup (0)
-	rawAddressSection db 5 dup (0)
-	rawSizeSection db 5 dup (0)
-	maxSize db 5 dup (0)
-	offsetAddress db 5 dup (0)
-	offsetImport db 5 dup (0)
-	ofts db 5 dup (0)
-	timeDateStamp db 5 dup (0)
-	forwarderChain db 5 dup(0)
-	nameRva db 5 dup (0)
-	iatImport db 5 dup (0)
+	rva db 4 dup (0)
+	virtualAddressSection db 4 dup (0)
+	virtualSizeSection db 4 dup (0)
+	rawAddressSection db 4 dup (0)
+	rawSizeSection db 4 dup (0)
+	maxSize db 4 dup (0)
+	offsetAddress db 4 dup (0)
+	offsetImport db 4 dup (0)
+	ofts db 4 dup (0)
+	timeDateStamp db 4 dup (0)
+	forwarderChain db 4 dup(0)
+	nameRva db 4 dup (0)
+	iatImport db 4 dup (0)
+	nameDll db 100 dup (0)
+	stt dd 0
+	index dd 0
+	offsetOFT db 4 dup (0)
+	cntFunc dw 0;
+	offsetName db 4 dup (0)
+	ofsFunc db 4 dup (0)
+	offsetFunc db 4 dup (0)
+	hint db 2 dup(0)
 .code
 convertRvaToOffset proc
 	push 0
@@ -654,22 +669,27 @@ endGetSectionInfor:
 	push offset ennter
 	call write
 	
+	
+tableImport:
+	mov edx , dword ptr [stt]
+	add edx , dword ptr [offsetImport]
 	push 0 
 	push 0
-	push dword ptr [offsetImport]
-	push dword ptr [handleInput]
+	push edx
+	push dword ptr [handleInput] 
 	call SetFilePointer 
-tableImport:
+	
 	push 4
 	call readByte 
 	mov edx , dword ptr [data]   
 	mov dword ptr [ofts]  , edx  
 
-	cmp dword ptr [data] , 0
+	cmp dword ptr [ofts] , 0
 	je endTableImport
 	
 	push 4
 	call readByte 
+	
 	mov edx , dword ptr [data]
 	mov dword ptr [timeDateStamp]  , edx
 	
@@ -688,6 +708,158 @@ tableImport:
 	mov dword ptr [iatImport] , edx
 	
 	
+	mov edx , dword ptr [nameRva]
+	mov dword ptr [rva] , edx 
+	
+	call convertRvaToOffset
+	
+	push 0 
+	push 0 
+	push dword ptr [offsetAddress]
+	push dword ptr [handleInput]
+	call SetFilePointer 
+	
+	push 100 
+	push offset nameDll
+	call RtlZeroMemory
+	
+	mov byte ptr [index] , 0
+loopGetName:
+	push 1
+	call readByte 
+	cmp byte ptr [data] , 0
+	je endGetName
+	mov dl , byte ptr [data]
+	mov eax , dword ptr [index]
+	mov byte ptr [nameDll + eax] , dl 
+	inc dword ptr [index]
+	jmp loopGetName
+endGetName:
+	
+	
+	
+	
+	
+	;;ghi vao trong file
+	
+	
+	push 40 
+	push offset ngan
+	call write 
+	
+	push 13 
+	push offset moduleName
+	call write 
+	
+	push 100 
+	push offset nameDll 
+	call write
+	push 1
+	push offset ennter 
+	call write 
+	;;;;;
+	mov dword ptr [cntFunc] , 0
+	
+	mov edx , dword ptr [ofts]
+	mov dword ptr [rva] , edx
+	call convertRvaToOffset
+	
+	mov edx , dword ptr [offsetAddress]
+	mov dword ptr [offsetOFT] , edx
+	
+	mov edx , dword ptr [nameRva]
+	mov dword ptr [rva] , edx
+	call convertRvaToOffset
+	mov edx , dword ptr [offsetAddress]
+	mov dword ptr [offsetName] , edx
+	
+	push 0
+	push 0
+	push dword ptr [offsetOFT]
+	push dword ptr [handleInput]
+	call SetFilePointer 
+	
+	push 4
+	call readByte 
+	
+	mov  edx , dword ptr [data]
+	mov dword ptr [ofsFunc] , edx
+	
+	mov dword ptr [data] , edx
+	call convertRvaToOffset
+	mov edx , dword ptr [offsetAddress]
+	mov dword ptr [offsetFunc] , edx
+	
+	
+	;;
+getNameFunc:
+	mov edx , dword ptr [offsetName]
+	cmp dword ptr [offsetFunc] , edx
+	jnl endGetNamefunc
+	push 0
+	push 0
+	push dword ptr [offsetFunc]
+	push dword ptr [handleInput]
+	call SetFilePointer 
+	
+	push 2
+	push readByte
+	mov dx , word ptr [data]
+	mov word ptr [hint] , dx
+	
+	
+	jmp getNameFunc
+endGetNamefunc:	
+	
+	
+	;;;;;;;;
+	push 6
+	push offset OFTs
+	call write 
+	
+	mov edx , dword ptr [ofts]
+	mov dword ptr [data] , edx 
+	push 4
+	call writeByte 
+	 
+	
+	
+	push 15
+	push offset Time
+	call write
+	mov edx , dword ptr [timeDateStamp]
+	mov dword ptr [data] , edx 
+	push 4
+	call writeByte 
+	
+	push 16
+	push offset ForwarderChain
+	call write 
+	
+	mov edx , dword ptr [forwarderChain]
+	mov dword ptr [data] , edx 
+	push 4
+	call writeByte 
+	
+	push 10
+	push offset NameRVA
+	call write 
+	
+	mov edx , dword ptr [nameRva]
+	mov dword ptr [data] , edx 
+	push 4
+	call writeByte 
+	
+	push 11
+	push offset fts
+	call write 
+	
+	mov edx , dword ptr [iatImport]
+	mov dword ptr [data] , edx 
+	push 4
+	call writeByte 
+	;;
+	add dword ptr [stt] , 20
 	jmp tableImport
 endTableImport:
 	
