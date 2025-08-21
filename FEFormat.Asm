@@ -66,6 +66,30 @@ includelib c:\masm32\lib\kernel32.lib
 	hint db 2 dup(0)
 	nameFunc db 100 dup (0)
 	index2 dd 0
+	addressOfFunction db 4 dup (0)
+	addressOfNames db 4 dup (0)
+	addressOfNameOrdinals db 4 dup (0)
+	numberOfFunction dd ?
+	numberOfNames dd ?
+	functionRVA db 4 dup (0)
+	nameExportFunction db 100 dup (0)
+	index3 dd 0
+	a1 db "Characteristics: ",0
+	a2 db "TimeDateStamp: " , 0
+	a3 db "MajorVerion: " , 0
+	a4 db "MinorVersion: " , 0
+	a5 db "Name: ", 0
+	a6 db "Base: ", 0
+	a7 db "NumberOfFuntions: ", 0
+	a8 db "NumberOfNames: " , 0
+	a9 db "AddressOfFuntions: " , 0
+	a10 db "AddressOfNames: ", 0
+	a11 db "AddressOfNameOrdinals: ", 0
+	a12 db "Function RVA: " , 0
+	a13 db "Name Ordinal: " , 0
+	a14 db "Name RVA: ", 0
+	a15 db "Name: ", 0
+	
 .code
 convertRvaToOffset proc
 	push 0
@@ -1033,25 +1057,269 @@ endGetNameok2:
 	add dword ptr [stt] , 20
 	jmp tableImport
 endTableImport:
+	call middleCompartment
+	push 11
+	push offset eat
+	call write 
+	push 1
+	push offset ennter
+	call write 
+	call middleCompartment
 	push 0
 	push 0
 	push dword ptr [ifanview]
 	push dword ptr [handleInput]
 	call SetFilePointer 
 	
+	cmp word ptr [magic] ,  010Bh 
+	je bit32
+	jmp bit64
+bit32:
 	push 1
 	push 0
 	push 136
 	push dword ptr [handleInput]
 	call SetFilePointer 
-	
+	jmp endbit
+bit64:
+	push 1
+	push 0
+	push 136
+	push dword ptr [handleInput]
+	call SetFilePointer
+endbit:
 	push 4
 	call readByte 
 	
+	mov edx , dword ptr [data]
+	mov dword ptr [rva] , edx
+	call convertRvaToOffset
+	
+	push 0
+	push 0
+	push dword ptr [offsetAddress]
+	push dword ptr [handleInput]
+	call SetFilePointer 
 	
 	
+	push 17
+	push offset a1
+	call write 
+	push 4
+	call readByte 
+	push 4
+	call writeByte 
+	
+	push 15
+	push offset a2
+	call write
+	push 4
+	call readByte 
+	push 4
+	call writeByte
+	
+	push 14
+	push offset a3
+	call write
+	push 2
+	call readByte 
+	push 2
+	call writeByte
+	
+	push 14
+	push offset a4
+	call write
+	push 2
+	call readByte
+	push 2
+	call writeByte 
+	
+	push 6
+	push offset a5
+	call write
+	push 4
+	call readByte 
+	push 4
+	call writeByte
+	
+	push 6
+	push offset a6
+	call write
+	push 4
+	call readByte 
+	push 4
+	call writeByte
 	
 	
+	push 19
+	push offset a7
+	call write
+	push 4
+	call readByte 
+	push 4
+	call writeByte
+	mov edx , dword ptr [data]
+	mov dword ptr [numberOfFunction] , edx
+	
+	push 15
+	push offset a8
+	call write
+	push 4
+	call readByte 
+	push 4
+	call writeByte
+	mov edx , dword ptr [data]
+	mov dword ptr [numberOfNames] , edx
+	
+	push 19
+	push offset a9
+	call write
+	push 4
+	call readByte
+	push 4
+	call writeByte 
+	mov edx , dword ptr [data]
+	mov dword ptr [addressOfFunction] , edx
+	
+	push 16
+	push offset a10
+	call write
+	push 4
+	call readByte
+	push 4
+	call writeByte
+	mov edx , dword ptr [data]
+	mov dword ptr [addressOfNames] , edx
+	
+	push 24
+	push offset a11
+	call write
+	push 4
+	call readByte
+	push 4
+	call writeByte
+	mov edx , dword ptr [data]
+	mov dword ptr [addressOfNameOrdinals] , edx
+	call middleCompartment
+	
+	
+	mov dword ptr [index] , 0
+	mov dword ptr [index2] , 0
+loopGetFuncEx:
+	call middleCompartment
+	cmp dword ptr [numberOfFunction] , 0
+	je notExits
+	
+	mov edx , dword ptr [addressOfFunction]
+	mov dword ptr [rva] , edx
+	
+	call convertRvaToOffset
+	mov eax , dword ptr [offsetAddress]
+	add eax , dword ptr [index]
+	push 0 
+	push 0 
+	push eax
+	push dword ptr [handleInput]
+	call SetFilePointer 
+	
+	push 14
+	push offset a12
+	call write
+	push 4
+	call readByte 
+	
+	push 4
+	call writeByte 
+	;;
+	cmp dword ptr [numberOfNames] , 0
+	je nextloopok
+	;;
+	mov edx , dword ptr [addressOfNameOrdinals]
+	mov dword ptr [rva] , edx
+	
+	call convertRvaToOffset
+	mov eax , dword ptr [offsetAddress]
+	add eax , dword ptr [index2]
+	
+	push 0
+	push 0
+	push eax
+	push dword ptr [handleInput]
+	call SetFilePointer 
+	
+	push 14
+	push offset a13
+	call write
+	push 2
+	call readByte 
+	push 2
+	call writeByte 
+	;;
+	mov edx , dword ptr [addressOfNames]
+	mov dword ptr [rva] , edx
+	
+	call convertRvaToOffset
+	mov eax , dword ptr [offsetAddress]
+	add eax , dword ptr [index]
+	
+	push 0
+	push 0
+	push eax
+	push dword ptr [handleInput]
+	call SetFilePointer 
+	
+	push 10
+	push offset a14
+	call write
+	push 4
+	call readByte 
+	push 4
+	call writeByte 
+	
+	mov edx , dword ptr [data]
+	mov dword ptr [rva] , edx
+	
+	call convertRvaToOffset
+	
+	push 0
+	push 0
+	push dword ptr [offsetAddress]
+	push dword ptr [handleInput]
+	call SetFilePointer 
+	mov dword ptr [index3] , 0
+loopGetNameEx: 
+	
+	push 1
+	call readByte 
+	cmp byte ptr [data] , 0
+	je endGetNameEx
+	mov dl , byte ptr [data]
+	mov ecx , dword ptr [index3]
+	
+	mov byte ptr [nameExportFunction + ecx] , dl
+	inc dword ptr [index3]
+	jmp loopGetNameEx
+	
+	push 100 
+	push offset nameExportFunction
+	call RtlZeroMemory
+endGetNameEx:
+	push 6
+	push offset a15
+	call write
+	push 100 
+	push offset nameExportFunction
+	call write 
+	push 1
+	push offset ennter
+	call write 	
+	dec dword ptr [numberOfNames]
+	
+nextloopok:	
+	add dword ptr [index]  , 4
+	add dword ptr [index2]  , 2
+	dec dword ptr [numberOfFunction]
+	jmp loopGetFuncEx
 notExits: ; khong tim thay trong bat cu section naof => khong ton tai table 	
 	;End process
 	push 0
