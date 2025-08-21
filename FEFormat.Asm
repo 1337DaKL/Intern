@@ -8,8 +8,8 @@ include windows.inc
 includelib c:\masm32\lib\user32.lib
 includelib c:\masm32\lib\kernel32.lib
 .data
-	pathInput db "C:\Users\LuongTD\Downloads\FE File\Bai2.exe",0
-	pathOutput db "C:\Users\LuongTD\Downloads\FE File\Results.txt" , 0	    
+	pathInput db "C:\Program Files\Google\Chrome\Application\chrome.exe",0
+	pathOutput db "D:\\Code\\Homework Intern\\PE Fomat\\Results.txt" , 0	    
 	handleInput dd ?
 	handleOutput dd ?
 	data db 100 dup (0)
@@ -74,11 +74,22 @@ convertRvaToOffset proc
 	push dword ptr [handleInput]
 	call SetFilePointer ; di chuyen den fe header
 	
+	cmp word ptr [magic] ,  010Bh
+ 	je iiss32bit
+ 	jmp iiss64bit
+iiss32bit:
 	push 1
  	push 0
  	push 248
  	push dword ptr [handleInput]
- 	call SetFilePointer  ; tu fe header di chuyen den sextion table
+ 	call SetFilePointer
+ 	jmp DirecInSection
+iiss64bit :	
+	push 1
+ 	push 0
+ 	push 264
+ 	push dword ptr [handleInput]
+ 	call SetFilePointer
 DirecInSection:
 	push 1
 	call readByte 
@@ -562,17 +573,31 @@ endReadMagic:
  	push dword ptr [handleInput]
  	call SetFilePointer ; di chuyen den vi tri bat dau cua FE header
  	
- 	push 1
+ 	cmp word ptr [magic] ,  010Bh
+ 	je iss32bit
+ 	jmp iss64bit
+iss32bit:
+	push 1
  	push 0
  	push 248
  	push dword ptr [handleInput]
- 	call SetFilePointer  ; tu fe header di chuyen den sextion table
+ 	call SetFilePointer
+ 	jmp loopGetSectionInfor
+iss64bit :	
+	push 1
+ 	push 0
+ 	push 264
+ 	push dword ptr [handleInput]
+ 	call SetFilePointer
+	  ; tu fe header di chuyen den sextion table
  	
  	;vi DosStub khoong  co dinh do dai nen phai lam nhu the nay 
 loopGetSectionInfor:
 	call middleCompartment ; ghi ra dau ngan giua cac section
 	push 1
 	call readByte  ; doc 1 buye dau tien 
+	
+	
 	
 	cmp byte ptr [data] , 0
 	je endGetSectionInfor ; neu byet do la 0 thi  doc xong tat ca cac sextion
@@ -647,15 +672,27 @@ endGetSectionInfor:
 	push dword ptr [ifanview]
 	push dword ptr [handleInput]
 	call SetFilePointer 
-	
+	cmp word ptr [magic] ,  010Bh 
+	je issss32bit 
+	jmp issss64bit
+issss32bit:
 	push 1
 	push 0
 	push 128
 	push dword ptr [handleInput]
 	call SetFilePointer  ; di chuyen den vi tri de doc rva cua direc
-	
+	jmp okNext
+issss64bit:	
+	push 1
+	push 0
+	push 144
+	push dword ptr [handleInput]
+	call SetFilePointer  ; di chuyen den vi tri de doc rva cua direc
+okNext:	
 	push 8 
 	call readByte 
+	
+	
 	
 	mov edx , dword ptr [data]
 	mov dword ptr [rva] , edx
@@ -683,6 +720,8 @@ tableImport:
 	
 	push 4
 	call readByte 
+	
+	
 	mov edx , dword ptr [data]   
 	mov dword ptr [ofts]  , edx  
 
@@ -758,10 +797,14 @@ endGetName:
 	call write
 	push 1
 	push offset ennter 
-	call write 
+	call write
+	
+	cmp word ptr [magic] ,  010Bh 
+	je t32bitt
+	jmp t64bitt 
 	;;;;;
 	
-	
+t32bitt:
 	mov dword ptr [index] , 0
 getNameok:	
 	push 40
@@ -836,8 +879,121 @@ endGetNameok:
 	mov dword ptr [data] , edx 
 	push 4
 	call writeByte 
-	 
 	
+	push 15
+	push offset Time
+	call write
+	mov edx , dword ptr [timeDateStamp]
+	mov dword ptr [data] , edx 
+	push 4
+	call writeByte 
+	
+	push 16
+	push offset ForwarderChain
+	call write 
+	
+	mov edx , dword ptr [forwarderChain]
+	mov dword ptr [data] , edx 
+	push 4
+	call writeByte 
+	
+	push 10
+	push offset NameRVA
+	call write 
+	
+	mov edx , dword ptr [nameRva]
+	mov dword ptr [data] , edx 
+	push 4
+	call writeByte 
+	
+	push 11
+	push offset fts
+	call write 
+	
+	mov edx , dword ptr [iatImport]
+	mov dword ptr [data] , edx 
+	push 4
+	call writeByte 
+	;;
+	add dword ptr [stt] , 20
+	jmp tableImport
+t64bitt:	
+	mov dword ptr [index] , 0
+getNameok2:	
+	push 40
+	push offset ngan
+	call write
+	mov edx , dword ptr [ofts]
+	mov dword ptr [rva] , edx
+	call convertRvaToOffset
+	mov ecx , dword ptr [index]
+	add ecx , dword ptr [offsetAddress]
+	push 0
+	push 0
+	push  ecx
+	push dword ptr [handleInput]
+	call SetFilePointer 
+	push 8
+	call readByte
+ 
+	 
+	push 8
+	call writeByte 
+	cmp dword ptr [data] , 0
+	je endGetNameok
+	
+	;;
+	mov edx , dword ptr [data]
+	mov dword ptr [rva] , edx
+	call convertRvaToOffset
+	push 0
+	push 0
+	push dword ptr [offsetAddress]
+	push dword ptr [handleInput]
+	call SetFilePointer 
+	
+	push 2
+	call readByte 
+	push 2
+	call writeByte  
+	
+	push 100
+	push offset nameFunc
+	call RtlZeroMemory 
+	mov dword ptr [index2] , 0
+okname2:
+	push 1
+	call readByte 
+	
+	cmp byte ptr [data] , 0
+	je enOkName2
+	
+	mov dl , byte ptr [data]
+	mov ecx , dword ptr [index2]
+	mov byte ptr [nameFunc + ecx] , dl
+	inc dword ptr [index2]
+	jmp okname2
+enOkName2:	
+	;; 
+	push 100
+	push offset nameFunc
+	call write 
+	push 1 
+	push offset ennter
+	call write 
+	add dword ptr [index] , 8
+	jmp getNameok2
+endGetNameok2:	
+	
+	;;;;;;;;
+	push 6
+	push offset OFTs
+	call write 
+	
+	mov edx , dword ptr [ofts]
+	mov dword ptr [data] , edx 
+	push 4
+	call writeByte 
 	
 	push 15
 	push offset Time
@@ -877,7 +1033,20 @@ endGetNameok:
 	add dword ptr [stt] , 20
 	jmp tableImport
 endTableImport:
+	push 0
+	push 0
+	push dword ptr [ifanview]
+	push dword ptr [handleInput]
+	call SetFilePointer 
 	
+	push 1
+	push 0
+	push 136
+	push dword ptr [handleInput]
+	call SetFilePointer 
+	
+	push 4
+	call readByte 
 	
 	
 	
