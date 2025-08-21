@@ -469,16 +469,17 @@ main:
 	call writeByte 
 	
 	;;so luong section
-	push 1
+	push 1 ; vi tri hien tai 
 	push 0
 	push 2
 	push dword ptr [handleInput]
 	call SetFilePointer 
 	
 	push 17
-	push offset numnerOfSection
+	push offset numnerOfSection ; tieu de
 	call write 
 	
+	; doc 2 buye so luong section
 	push 2 
 	call readByte 
 	push 2
@@ -490,7 +491,7 @@ main:
 	push 0
 	push 16
 	push dword ptr [handleInput]
-	call SetFilePointer 
+	call SetFilePointer  ; di chuyen den magic
 	
 	push 2
 	call readByte 
@@ -516,26 +517,26 @@ main:
 	
 	
 	
-	
+	; tien hanh doc image base
 	push 10
 	push offset imageBase
 	call write
-	cmp word ptr [magic] ,  010Bh
+	cmp word ptr [magic] ,  010Bh ; kiem tra xem chuong trinh la 64 bit hay 32 bit thong qua magic
 	je is32Bit
 	jmp is64Bit
-is32Bit:
+is32Bit: ; neu la 32 bit thi imagebase se laf dword
 	push 1
 	push 0
 	push 8
 	push dword ptr [handleInput]
-	call SetFilePointer 
+	call SetFilePointer ; bo 8 byte thi gom base of code va 1 truonwg nao nuwa
 	push 4
-	call readByte 
+	call readByte ; doc 4 buye
 	call convertHexToAski
 	push 4
 	call writeByte 
 	jmp endReadMagic
-is64Bit:
+is64Bit: ; new 64 bit thi image base se laf 64 bit
 	push 1
 	push 0
 	push 4
@@ -586,6 +587,8 @@ is64Bit:
 	call write
 	jmp endReadMagic
 endReadMagic:
+
+	; doc infor table section
 	push 15
 	push offset sectionInfor ; ghi tieu de
 	call write 
@@ -734,8 +737,8 @@ okNext:
 	
 	
 tableImport:
-	mov edx , dword ptr [stt]
-	add edx , dword ptr [offsetImport]
+	mov edx , dword ptr [stt] ; lay vi tri cac rva cua tung thu vien 
+	add edx , dword ptr [offsetImport] ; cong them vao trong dia chi offset cua import 
 	push 0 
 	push 0
 	push edx
@@ -743,17 +746,17 @@ tableImport:
 	call SetFilePointer 
 	
 	push 4
-	call readByte 
+	call readByte ; doc 4 buye la oft rva dia chi ao chua dia chi cac ham 
 	
 	
 	mov edx , dword ptr [data]   
-	mov dword ptr [ofts]  , edx  
+	mov dword ptr [ofts]  , edx   ; luu lai
 
 	cmp dword ptr [ofts] , 0
 	je endTableImport
 	
 	push 4
-	call readByte 
+	call readByte ; tien hanh doc cac truong thong tin khac 
 	
 	mov edx , dword ptr [data]
 	mov dword ptr [timeDateStamp]  , edx
@@ -775,29 +778,31 @@ tableImport:
 	
 	mov edx , dword ptr [nameRva]
 	mov dword ptr [rva] , edx 
-	
+	; sau khi luu laij tat ca thi convert sang dia chi offset de tien hanh lay name cua thu vien
 	call convertRvaToOffset
 	
 	push 0 
 	push 0 
 	push dword ptr [offsetAddress]
 	push dword ptr [handleInput]
-	call SetFilePointer 
+	call SetFilePointer  ; di chuyen den dia chi chua ten cua thu vien
 	
 	push 100 
 	push offset nameDll
-	call RtlZeroMemory
-	
-	mov byte ptr [index] , 0
+	call RtlZeroMemory ; reset lai khoang khong gian luu ten thu vien 
+	; sau do tien hanh lay ten bang cach duyet qua tung buye den khi byte bang 0
+	mov byte ptr [index] , 0 
 loopGetName:
 	push 1
-	call readByte 
-	cmp byte ptr [data] , 0
+	call readByte ; doc tung byte 1
+	cmp byte ptr [data] , 0 ; so sanh
 	je endGetName
-	mov dl , byte ptr [data]
+	;luu vao trong vi tri cua noi luu ten
+	mov dl , byte ptr [data] 
 	mov eax , dword ptr [index]
 	mov byte ptr [nameDll + eax] , dl 
-	inc dword ptr [index]
+	inc dword ptr [index] ; sau moi vong tang index len de tro den byte luu tiep theo nameDll
+	;data luon tro tang vi ham readByte se tu tang sau khi doc byte
 	jmp loopGetName
 endGetName:
 	
@@ -808,33 +813,29 @@ endGetName:
 	;;ghi vao trong file
 	
 	
-	push 40 
-	push offset ngan
-	call write 
+	call middleCompartment 
 	
 	push 13 
-	push offset moduleName
+	push offset moduleName; ghi ghi tieu de
 	call write 
 	
 	push 100 
-	push offset nameDll 
+	push offset nameDll  ; ghi ten
 	call write
 	push 1
 	push offset ennter 
 	call write
 	
-	cmp word ptr [magic] ,  010Bh 
-	je t32bitt
-	jmp t64bitt 
+	cmp word ptr [magic] ,  010Bh ; tien hanh doc cac ham trong thu vien 
+	je t32bitt ; thi oft cua no chi la 4 byte 
+	jmp t64bitt ; thig oft no tan 8 byte
 	;;;;;
 	
 t32bitt:
 	mov dword ptr [index] , 0
 getNameok:	
-	push 40
-	push offset ngan
-	call write
-	mov edx , dword ptr [ofts]
+	call middleCompartment
+	mov edx , dword ptr [ofts]; lay gia tri ofts cua thu vien
 	mov dword ptr [rva] , edx
 	call convertRvaToOffset
 	mov ecx , dword ptr [index]
@@ -843,33 +844,33 @@ getNameok:
 	push 0
 	push  ecx
 	push dword ptr [handleInput]
-	call SetFilePointer 
+	call SetFilePointer  ; di chuyen den noi luu dia chi ao tuong doi cua cac ham trong thu vin
 	push 4
 	call readByte 
 	push 4
-	call writeByte 
-	cmp dword ptr [data] , 0
+	call writeByte  ; doc 4 byte 1
+	cmp dword ptr [data] , 0 ; neu bang 0 thi tuc la no ket thuc
 	je endGetNameok
 	
-	;;
-	mov edx , dword ptr [data]
+	;; luc nay da co dia chi ao cua caca ham trong thu vien 
+	mov edx , dword ptr [data] ; sau do tien hanh di chuyen den vi tri day 
 	mov dword ptr [rva] , edx
 	call convertRvaToOffset
 	push 0
 	push 0
 	push dword ptr [offsetAddress]
 	push dword ptr [handleInput]
-	call SetFilePointer 
+	call SetFilePointer ; di chuyen
 	
 	push 2
 	call readByte 
 	push 2
-	call writeByte  
+	call writeByte  ; doc 2 buye chinh la hint cua ham  
 	
 	push 100
 	push offset nameFunc
 	call RtlZeroMemory 
-	mov dword ptr [index2] , 0
+	mov dword ptr [index2] , 0; sau do tien hanh doc byye 
 okname:
 	push 1
 	call readByte 
@@ -881,28 +882,28 @@ okname:
 	mov ecx , dword ptr [index2]
 	mov byte ptr [nameFunc + ecx] , dl
 	inc dword ptr [index2]
-	jmp okname
+	jmp okname ; doc nhu tren 
 enOkName:	
 	;; 
 	push 100
 	push offset nameFunc
-	call write 
+	call write  ; ghi ten 
 	push 1 
 	push offset ennter
 	call write 
-	add dword ptr [index] , 4
+	add dword ptr [index] , 4 ; moi dia chi ao tuong doi se cach nhau 4 byte 
 	jmp getNameok
 endGetNameok:	
 	
 	;;;;;;;;
 	push 6
-	push offset OFTs
+	push offset OFTs ; ghi dia chi ao 
 	call write 
 	
 	mov edx , dword ptr [ofts]
 	mov dword ptr [data] , edx 
 	push 4
-	call writeByte 
+	call writeByte  ; ghi dia chi ao cua thu vien 
 	
 	push 15
 	push offset Time
@@ -941,7 +942,7 @@ endGetNameok:
 	;;
 	add dword ptr [stt] , 20
 	jmp tableImport
-t64bitt:	
+t64bitt:	6;64 bit thi tuong tu nhung oft cua no se 8byte nen khi duyet thi se tang index 8 byte 1
 	mov dword ptr [index] , 0
 getNameok2:	
 	push 40
@@ -1057,6 +1058,7 @@ endGetNameok2:
 	add dword ptr [stt] , 20
 	jmp tableImport
 endTableImport:
+	;; tien hanh doc export
 	call middleCompartment
 	push 11
 	push offset eat
@@ -1069,7 +1071,7 @@ endTableImport:
 	push 0
 	push dword ptr [ifanview]
 	push dword ptr [handleInput]
-	call SetFilePointer 
+	call SetFilePointer ;
 	
 	cmp word ptr [magic] ,  010Bh 
 	je bit32
@@ -1089,7 +1091,7 @@ bit64:
 	call SetFilePointer
 endbit:
 	push 4
-	call readByte 
+	call readByte ; doc dia chi tuong doi cua eat
 	
 	mov edx , dword ptr [data]
 	mov dword ptr [rva] , edx
@@ -1099,7 +1101,7 @@ endbit:
 	push 0
 	push dword ptr [offsetAddress]
 	push dword ptr [handleInput]
-	call SetFilePointer 
+	call SetFilePointer ; sau do di chuyen den vi tri do va tien hanh doc lan luojt
 	
 	
 	push 17
@@ -1108,7 +1110,7 @@ endbit:
 	push 4
 	call readByte 
 	push 4
-	call writeByte 
+	call writeByte  ; 
 	
 	push 15
 	push offset a2
@@ -1211,7 +1213,7 @@ loopGetFuncEx:
 	je notExits
 	
 	mov edx , dword ptr [addressOfFunction]
-	mov dword ptr [rva] , edx
+	mov dword ptr [rva] , edx ; tien hanh di chuyen den rva cua function
 	
 	call convertRvaToOffset
 	mov eax , dword ptr [offsetAddress]
@@ -1220,7 +1222,7 @@ loopGetFuncEx:
 	push 0 
 	push eax
 	push dword ptr [handleInput]
-	call SetFilePointer 
+	call SetFilePointer  
 	
 	push 14
 	push offset a12
@@ -1229,9 +1231,9 @@ loopGetFuncEx:
 	call readByte 
 	
 	push 4
-	call writeByte 
+	call writeByte  ; doc 4 byte laf func rva nay luu code cua ham export
 	;;
-	cmp dword ptr [numberOfNames] , 0
+	cmp dword ptr [numberOfNames] , 0 ; do name co the it hon nen neu doc qua thi se bo qua
 	je nextloopok
 	;;
 	mov edx , dword ptr [addressOfNameOrdinals]
@@ -1245,7 +1247,7 @@ loopGetFuncEx:
 	push 0
 	push eax
 	push dword ptr [handleInput]
-	call SetFilePointer 
+	call SetFilePointer ; di chuyen toi day
 	
 	push 14
 	push offset a13
@@ -1253,8 +1255,8 @@ loopGetFuncEx:
 	push 2
 	call readByte 
 	push 2
-	call writeByte 
-	;;
+	call writeByte ; doc name ordinal 
+	;; tuong tu nhu the se doc name rva vi so luong name ordinal vaf name nva se giong nhau 
 	mov edx , dword ptr [addressOfNames]
 	mov dword ptr [rva] , edx
 	
@@ -1274,7 +1276,7 @@ loopGetFuncEx:
 	push 4
 	call readByte 
 	push 4
-	call writeByte 
+	call writeByte ; doc rva name
 	
 	mov edx , dword ptr [data]
 	mov dword ptr [rva] , edx
@@ -1286,8 +1288,8 @@ loopGetFuncEx:
 	push dword ptr [offsetAddress]
 	push dword ptr [handleInput]
 	call SetFilePointer 
-	mov dword ptr [index3] , 0
-loopGetNameEx: 
+	mov dword ptr [index3] , 0 ; sau do di chuyen toi de doc name
+loopGetNameEx: ; vong lap doc name
 	
 	push 1
 	call readByte 
@@ -1308,7 +1310,7 @@ endGetNameEx:
 	push offset a15
 	call write
 	push 100 
-	push offset nameExportFunction
+	push offset nameExportFunction ; ghi name vao 
 	call write 
 	push 1
 	push offset ennter
@@ -1316,8 +1318,8 @@ endGetNameEx:
 	dec dword ptr [numberOfNames]
 	
 nextloopok:	
-	add dword ptr [index]  , 4
-	add dword ptr [index2]  , 2
+	add dword ptr [index]  , 4 ; funtion rva laf 4 byte 
+	add dword ptr [index2]  , 2 ; cai nay laf do name ordinal chi co 2 byte 
 	dec dword ptr [numberOfFunction]
 	jmp loopGetFuncEx
 notExits: ; khong tim thay trong bat cu section naof => khong ton tai table 	
