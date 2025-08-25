@@ -89,7 +89,17 @@ includelib c:\masm32\lib\kernel32.lib
 	a13 db "Name Ordinal: " , 0
 	a14 db "Name RVA: ", 0
 	a15 db "Name: ", 0
-	
+	rvaReloc db 4 dup (0)
+	offsetReloc dd ?
+	sizeOfBlock db 4 dup (0)
+	item db 4 dup (0)
+	typeItem db 4 dup (0)
+	rvaRelocDec db 4 dup (0)
+	absolute db "ABSOLUTE", 0
+	highbase db "HIGH", 0
+	lowbase db "LOW", 0
+	highlow db "HIGHLOW" , 0
+	dir64 db "DIR64" , 0
 .code
 convertRvaToOffset proc
 	push 0
@@ -942,7 +952,7 @@ endGetNameok:
 	;;
 	add dword ptr [stt] , 20
 	jmp tableImport
-t64bitt:	6;64 bit thi tuong tu nhung oft cua no se 8byte nen khi duyet thi se tang index 8 byte 1
+t64bitt:	;64 bit thi tuong tu nhung oft cua no se 8byte nen khi duyet thi se tang index 8 byte 1
 	mov dword ptr [index] , 0
 getNameok2:	
 	push 40
@@ -1079,7 +1089,7 @@ endTableImport:
 bit32:
 	push 1
 	push 0
-	push 136
+	push 120
 	push dword ptr [handleInput]
 	call SetFilePointer 
 	jmp endbit
@@ -1210,7 +1220,7 @@ endbit:
 loopGetFuncEx:
 	call middleCompartment
 	cmp dword ptr [numberOfFunction] , 0
-	je notExits
+	je endGetInforExport
 	
 	mov edx , dword ptr [addressOfFunction]
 	mov dword ptr [rva] , edx ; tien hanh di chuyen den rva cua function
@@ -1322,6 +1332,122 @@ nextloopok:
 	add dword ptr [index2]  , 2 ; cai nay laf do name ordinal chi co 2 byte 
 	dec dword ptr [numberOfFunction]
 	jmp loopGetFuncEx
+	
+	
+	
+endGetInforExport:
+	
+	push 0
+	push 0
+	push dword ptr [ifanview]
+	push dword ptr [handleInput]
+	call SetFilePointer 
+	
+	cmp dword ptr [magic] , 010Bh
+	je bit3232
+	jmp bit6464
+bit3232:
+	push 1
+	push 0
+	push 160
+	push dword ptr [handleInput]
+	call SetFilePointer 
+	jmp nextRelo
+bit6464:
+	push 1
+	push 0
+	push 176
+	push dword ptr [handleInput]
+	call SetFilePointer 
+nextRelo:
+	push 4
+	call readByte ; doc rva cua direc
+	
+	mov edx , dword ptr [data]
+	mov dword ptr [rvaRelocDec] , edx
+	mov dword ptr [rva] , edx
+	call convertRvaToOffset
+	push 0
+	push 0
+	push dword ptr [offsetAddress]
+	push dword ptr [handleInput]
+	call SetFilePointer 
+	
+	
+	
+	
+getRelocTable:	
+	call middleCompartment
+	push 4
+	call readByte 
+	mov edx , dword ptr [data]
+	mov dword ptr [rvaReloc] , edx
+	
+	cmp dword ptr [data] , 0
+	je endGetRelocTable
+	
+	push 4
+	call writeByte 
+	
+	push 4
+	call readByte 
+	mov edx , dword ptr [data]
+	mov dword ptr [sizeOfBlock] , edx
+	
+	push 4
+	call writeByte 
+	call middleCompartment
+loopGetItem:
+	call middleCompartment
+	push 2
+	call readByte 
+	push 2
+	call writeByte
+	call convertHexToAski
+	cmp byte ptr [by +4] , "0"
+	je isab
+	cmp byte ptr [by + 4] , "1"
+	je ishi
+	cmp byte ptr [by +4] , "2"
+	je isl
+	cmp byte ptr [by +4] , "3"
+	je ishil
+	cmp byte ptr [by +4] , "A"
+	je isdi
+isab:
+	push 8
+	push offset absolute
+	call write 
+	jmp endtype
+ishi:
+	push 4
+	push offset highbase
+	call write 
+	jmp endtype
+isl	:
+	push 3
+	push offset lowbase
+	call write 
+	jmp endtype
+ishil:
+	push 7
+	push offset highlow
+	call write 
+	jmp endtype
+isdi:
+	push 5
+	push offset dir64
+	call write 
+	jmp endtype
+endtype:
+	cmp word ptr [data] , 0
+	je  getRelocTable
+	jmp loopGetItem
+endGetRelocTable:
+	
+	
+	
+	
 notExits: ; khong tim thay trong bat cu section naof => khong ton tai table 	
 	;End process
 	push 0
