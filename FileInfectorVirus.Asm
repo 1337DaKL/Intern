@@ -8,10 +8,21 @@ include windows.inc
 includelib c:\masm32\lib\user32.lib
 includelib c:\masm32\lib\kernel32.lib
 .data
-	path db "C:\Users\LuongTD\Desktop\RadASM-2.2.2.4-FullPackage\Masm\Projects\FileInfectorVius\test" , 0
+	path db "D:\document\Buoi2" , 0
 	handle dd ?
 	wfd WIN32_FIND_DATA <>
-.code	
+.code
+main:
 	push offset wfd
 	push offset path
 	call FindFirstFile 
+	mov dword ptr [handle], eax
+loopFile:
+	push offset wfd
+	push dword ptr [handle]
+	call FindNextFile
+	cmp eax , 0
+	je endLoopFile 
+	jmp loopFile
+endLoopFile:
+end main
