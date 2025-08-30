@@ -37,11 +37,18 @@ CheckPE:
 GetKernel32Error:
 	mov esi , 0BFF7000h	
 GetKernel32Success:
-	mov eax , esi 
-	mov ebx , dword ptr [eax + 60]	
-	mov eax , dword ptr [ebx + esi + 120] ;; nhay den export directory
-	mov eax , dword ptr [esi + eax + 24]
-	mov eax , dword ptr [eax +  esi]
+	mov eax , esi
+	mov eax , dword ptr [eax + 3ch]
+	add eax , esi
+	add eax , 120
+	mov eax , dword ptr [eax]
+	add eax , esi ; dia chi tuyet doi den export table
+	add eax , 32
+	mov eax , dword ptr [eax]
+	add eax , esi 	
+	mov eax , dword ptr [eax]
+	add eax , esi ; dia chi thuc su cua name func
+	mov eax , dword ptr [eax]
 	;------------------------------------
 	
 	
