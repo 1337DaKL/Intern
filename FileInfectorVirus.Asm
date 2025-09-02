@@ -2,6 +2,7 @@
 .model flat, stdcall
 .stack 100h
 option casemap:none
+.code
 WIN32_FIND_DATAA STRUC
     dwFileAttributes     dd ?
     ftCreationTimeLow    dd ?
@@ -17,7 +18,6 @@ WIN32_FIND_DATAA STRUC
     cFileName            db 260 dup(?)
     cAlternateFileName   db 14 dup(?)
 WIN32_FIND_DATAA ENDS
-.code
 print proc 
 	mov edx , dword ptr [ebp + offset offsetString]
 	add edx , ebp
